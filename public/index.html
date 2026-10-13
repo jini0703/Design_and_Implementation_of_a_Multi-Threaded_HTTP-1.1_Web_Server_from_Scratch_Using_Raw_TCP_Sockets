@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTTP/1.1 Web Server - Systems Monitoring Dashboard</title>
+  <meta name="description" content="Status and telemetry dashboard for custom multi-threaded HTTP/1.1 web server in C17.">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(148, 163, 184, 0.15);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(129, 140, 248, 0.08) 0%, transparent 40%);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 2.5rem;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(148, 163, 184, 0.3);
+    }
+
+    .card-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .card-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+
+    .banner {
+      background: rgba(30, 41, 59, 0.9);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .banner h2 {
+      font-size: 1.2rem;
+      margin-bottom: 0.75rem;
+      color: var(--accent);
+    }
+
+    .banner p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 0.5rem;
+    }
+
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .spec-table th, .spec-table td {
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .spec-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--card-border);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server</h1>
+        <p class="subtitle">Built from scratch in C17 using raw POSIX TCP sockets &amp; pthreads</p>
+      </div>
+      <div id="server-status" class="status-badge">
+        <span class="status-dot"></span>
+        <span id="status-text">Scaffold Initialized</span>
+      </div>
+    </header>
+
+    <div class="banner">
+      <h2>Project Architecture &amp; Telemetry Interface</h2>
+      <p>
+        This interface serves as both the static resource root and the dynamic telemetry visualization portal.
+        During runtime, telemetry metrics are polled periodically from the <code>/metrics</code> endpoint to display
+        concurrency metrics, queue pressure, and adaptive admission control states.
+      </p>
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Specification</th>
+            <th>Runtime Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Transport Protocol</td>
+            <td>POSIX TCP Sockets (IPv4/IPv6)</td>
+            <td>Stream listener, connection queueing, non-blocking polling</td>
+          </tr>
+          <tr>
+            <td>Concurrency Model</td>
+            <td>Fixed pthread Worker Pool</td>
+            <td>Eliminates per-request fork overhead; processes connections</td>
+          </tr>
+          <tr>
+            <td>Connection Queue</td>
+            <td>Thread-Safe Bounded FIFO</td>
+            <td>Absorbs traffic bursts; enforces strict memory boundaries</td>
+          </tr>
+          <tr>
+            <td>Overload Control</td>
+            <td>QLAAC (Queue &amp; Latency Aware)</td>
+            <td>Monitors p95 response time and queue depth to prevent thrashing</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-label">Active Worker Threads</div>
+        <div class="card-value" id="val-workers">--</div>
+        <div class="card-desc">Worker pool threads actively serving requests</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Queue Occupancy</div>
+        <div class="card-value" id="val-queue">--</div>
+        <div class="card-desc">Pending client connections in bounded queue</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Median Latency (p50)</div>
+        <div class="card-value" id="val-p50">-- ms</div>
+        <div class="card-desc">Rolling 50th-percentile response time</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Tail Latency (p95)</div>
+        <div class="card-value" id="val-p95">-- ms</div>
+        <div class="card-desc">Rolling 95th-percentile response time</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Completed Requests</div>
+        <div class="card-value" id="val-requests">--</div>
+        <div class="card-desc">Total HTTP transactions completed successfully</div>
+      </div>
+      <div class="card">
+        <div class="card-label">QLAAC State</div>
+        <div class="card-value" id="val-qlaac">NORMAL</div>
+        <div class="card-desc">Adaptive admission control state machine</div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Computer Networks Systems Project &bull; RFC 9112 Protocol Target &bull; C17 / POSIX.1-2008</p>
+    </footer>
+  </div>
+
+  <script>
+    async function updateTelemetry() {
+      try {
+        const response = await fetch('/metrics', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+
+        document.getElementById('val-workers').innerText = data.active_workers ?? '0';
+        document.getElementById('val-queue').innerText = data.current_queue_depth ?? '0';
+        document.getElementById('val-p50').innerText = (data.median_latency_ms?.toFixed(2) ?? '--') + ' ms';
+        document.getElementById('val-p95').innerText = (data.p95_latency_ms?.toFixed(2) ?? '--') + ' ms';
+        document.getElementById('val-requests').innerText = data.total_requests_completed ?? '0';
+        document.getElementById('val-qlaac').innerText = data.qlaac_state ?? 'NORMAL';
+
+        const statusText = document.getElementById('status-text');
+        statusText.innerText = 'Server Active (HTTP/1.1)';
+      } catch (err) {
+        // Server or endpoint not yet serving JSON metrics
+      }
+    }
+
+    setInterval(updateTelemetry, 2000);
+  </script>
+</body>
+</html>

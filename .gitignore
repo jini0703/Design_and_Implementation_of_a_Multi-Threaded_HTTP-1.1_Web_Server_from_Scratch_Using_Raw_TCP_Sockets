@@ -1,0 +1,99 @@
+# ==============================================================================
+# Git Ignore Configuration
+# Project: Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server
+# ==============================================================================
+
+# Compiled Binaries & Build Output
+bin/
+obj/
+build/
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+server
+http_server
+test_runner
+
+# Dependency Files
+*.d
+
+# Debugging, Profiling, and Core Dumps
+vgcore.*
+core
+core.*
+gmon.out
+*.gcda
+*.gcno
+*.gcov
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# Editor & IDE Directories
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+*.bak
+
+# Logs & Runtime Dumps
+*.log
+logs/
+
+# Python Bytecode & Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.mypy_cache/
+
+# Benchmark Temporary Artifacts (Preserve deliberate results)
+benchmark/tmp/
+benchmark/*.tmp
+results/raw/*.tmp
+results/raw/*.log
+
+# Explicit Inclusions: Keep vital deliverables and benchmark data tracked
+!deliverables/report/*.pdf
+!deliverables/presentation/*.pptx
+!results/raw/*.csv
+!results/processed/*.csv
+!results/plots/*.png
+!results/plots/*.svg
+!.gitkeep

@@ -1,0 +1,106 @@
+# ==============================================================================
+# Configuration File for HTTP/1.1 Web Server (Example)
+# Project: Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server
+#          from Scratch Using Raw TCP Sockets
+# ==============================================================================
+# Syntax: key = value
+# Lines starting with '#' are treated as comments.
+# Whitespace around keys and values is trimmed.
+
+# ------------------------------------------------------------------------------
+# 1. Network & Socket Configuration
+# ------------------------------------------------------------------------------
+# Host interface to bind on (0.0.0.0 binds to all available network interfaces)
+host = 0.0.0.0
+
+# Listening TCP port (standard unprivileged port for development)
+port = 8080
+
+# TCP listen backlog queue length passed to listen(socket_fd, backlog).
+# Controls the operating system's SYN and accept queue capacity.
+socket_backlog = 128
+
+# Socket timeout in seconds for receiving data from slow/idle clients (SO_RCVTIMEO)
+socket_rcv_timeout_sec = 5
+
+# Socket timeout in seconds for transmitting responses (SO_SNDTIMEO)
+socket_snd_timeout_sec = 5
+
+# ------------------------------------------------------------------------------
+# 2. Concurrency & Worker Thread Pool
+# ------------------------------------------------------------------------------
+# Number of persistent worker threads in the pthread worker pool.
+# Typically set to matching CPU core count or a bounded multiplier.
+worker_threads = 4
+
+# Maximum capacity of the bounded connection queue.
+# When the queue is full, the server applies overload shedding (rejecting or 503).
+connection_queue_capacity = 64
+
+# Maximum duration (in seconds) a worker thread will block waiting for a job
+# before re-checking the server lifecycle/shutdown condition.
+worker_idle_timeout_sec = 2
+
+# ------------------------------------------------------------------------------
+# 3. HTTP/1.1 Protocol & Persistent Connection (Keep-Alive) Settings
+# ------------------------------------------------------------------------------
+# Maximum number of sequential requests allowed on a single persistent connection
+keepalive_max_requests = 100
+
+# Idle timeout (in seconds) between successive requests on a persistent connection
+keepalive_timeout_sec = 5
+
+# Maximum allowed size for HTTP request headers in bytes (prevents header overflow attacks)
+max_header_size = 8192
+
+# Maximum allowed size for HTTP request body in bytes (e.g., 10 MB limit for POST)
+max_body_size = 10485760
+
+# Internal I/O buffer size (in bytes) used for socket read/write operations
+io_buffer_size = 8192
+
+# ------------------------------------------------------------------------------
+# 4. Static File Serving & Resource Safeguards
+# ------------------------------------------------------------------------------
+# Base filesystem path for public static assets (relative or absolute)
+public_root = ./public
+
+# Default index file to serve when a directory root is requested
+default_index = index.html
+
+# Enable zero-copy file transfer via Linux sendfile(2) when serving static files
+enable_sendfile = true
+
+# ------------------------------------------------------------------------------
+# 5. Queue-and-Latency-Aware Admission Control (QLAAC) - Experimental
+# ------------------------------------------------------------------------------
+# Enable or disable the experimental adaptive admission controller
+adaptive_control_enabled = false
+
+# Sampling window in milliseconds for rolling latency and throughput metrics
+sampling_window_ms = 1000
+
+# High-water mark for connection queue occupancy ratio (0.0 to 1.0) triggering CAUTION
+queue_caution_threshold = 0.70
+
+# Critical queue occupancy ratio (0.0 to 1.0) triggering OVERLOAD shedding
+queue_overload_threshold = 0.90
+
+# 95th percentile response latency threshold (in milliseconds) triggering CAUTION
+latency_caution_ms = 50.0
+
+# 95th percentile response latency threshold (in milliseconds) triggering OVERLOAD
+latency_overload_ms = 150.0
+
+# Number of consecutive normal sampling windows required before transitioning
+# from OVERLOAD or CAUTION back to NORMAL state (hysteresis dampening)
+recovery_sample_count = 5
+
+# ------------------------------------------------------------------------------
+# 6. Observability & Runtime Metrics
+# ------------------------------------------------------------------------------
+# Expose thread-safe runtime telemetry endpoint
+metrics_enabled = true
+
+# HTTP path mapped to the runtime metrics payload
+metrics_route = /metrics

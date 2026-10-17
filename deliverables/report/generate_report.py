@@ -171,7 +171,11 @@ REPORT_MD = r"""# Design and Implementation of a Multi-Threaded HTTP/1.1 Web Ser
 
 **Academic Course Technical Report**
 *Department of Computer Science & Systems Engineering*
-**Date:** October 2026 | **Language:** ISO C17 | **Platform:** Linux (POSIX.1-2008 / x86_64)
+**Course:** Computer Networks (BCSE308P / CS-504) | **Date:** October 2026 | **Language:** ISO C17 | **Platform:** Linux (POSIX.1-2008 / x86_64)
+
+## Project Team
+- **24BCE0702 — Yash Pradhan**
+- **24BCE0714 — Anjini Pandey**
 
 ---
 
@@ -180,7 +184,8 @@ REPORT_MD = r"""# Design and Implementation of a Multi-Threaded HTTP/1.1 Web Ser
 | Metadata Field | Project Specification |
 | :--- | :--- |
 | **Project Title** | Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server from Scratch Using Raw TCP Sockets |
-| **Course** | Advanced Computer Networks & Distributed Systems |
+| **Course** | Computer Networks Lab (BCSE308P), Fall Semester 2026–27 |
+| **Project Team** | **1. 24BCE0702 — Yash Pradhan**<br>**2. 24BCE0714 — Anjini Pandey** |
 | **Implementation Language** | C17 (Strict ANSI/ISO C Standards) |
 | **System Interfaces** | POSIX.1-2008 Berkeley Sockets, POSIX Threads (`pthreads`), Linux Kernel `sendfile(2)` |
 | **Target Architecture** | POSIX x86_64 / Linux 6.6 Kernel |
@@ -563,7 +568,7 @@ def generate_report():
     # 2. Convert to PDF using markdown_pdf
     pdf = MarkdownPdf(toc_level=3)
     pdf.meta["title"] = "Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server from Scratch Using Raw TCP Sockets"
-    pdf.meta["author"] = "Systems Engineering Research Team"
+    pdf.meta["author"] = "Yash Pradhan (24BCE0702) & Anjini Pandey (24BCE0714)"
     pdf.meta["subject"] = "Computer Networks Course Final Technical Report"
 
     # Add section with user CSS

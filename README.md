@@ -1,545 +1,514 @@
 # Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server from Scratch Using Raw TCP Sockets
 
-Building a from-scratch HTTP/1.1 web server in **C17** using **raw POSIX TCP sockets** and **pthreads**, featuring custom streaming parsing, bounded concurrency, persistent connections, adaptive overload control, and reproducible benchmarking.
+[![Language](https://img.shields.io/badge/Language-C17%20%2F%20ISO%209899%3A2018-00599C?logo=c)](file:///C:/Users/ANJINI%20PANDEY/.gemini/antigravity-ide/scratch/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets/src)
+[![Platform](https://img.shields.io/badge/Platform-POSIX.1--2008%20%2F%20Linux%20x86__64-FCC624?logo=linux&logoColor=black)](file:///C:/Users/ANJINI%20PANDEY/.gemini/antigravity-ide/scratch/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets)
+[![RFC Compliance](https://img.shields.io/badge/RFC-9112%20%7C%209110-blue)](https://www.rfc-editor.org/rfc/rfc9112.html)
+[![Verification](https://img.shields.io/badge/Tests-49%2F49%20Passing%20(100%25)-success)](file:///C:/Users/ANJINI%20PANDEY/.gemini/antigravity-ide/scratch/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets/results/test_evidence/test_run_summary.txt)
+[![Course](https://img.shields.io/badge/Course-BCSE308P%20Computer%20Networks-red)](file:///C:/Users/ANJINI%20PANDEY/.gemini/antigravity-ide/scratch/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets/deliverables/report/HTTP11_Web_Server_Project_Report.pdf)
+
+A high-performance, zero-dependency academic systems implementation of an RFC 9112 compliant **HTTP/1.1 Web Server built strictly from scratch** using low-level POSIX TCP Berkeley sockets (`AF_INET`, `SOCK_STREAM`) and POSIX threads (`pthreads`).
+
+Features custom zero-copy streaming request parsing, a thread-safe bounded circular FIFO connection queue, fixed-size worker pool concurrency, Linux kernel `sendfile(2)` static asset streaming, real-time in-memory telemetry, an HTML5/Canvas systems monitoring dashboard, and an experimental closed-loop **Queue-and-Latency-Aware Admission Controller (QLAAC)** designed to prevent tail-latency bufferbloat collapse under extreme traffic surges.
 
 ---
 
-## Current Implementation Status
+## Table of Contents
 
-The following matrix documents the verification and completion state across all planned architectural modules. At this repository setup stage, the foundational repository scaffolds, documentation, configurations, test harnesses, and starter binaries are established. Core networking runtime and RFC protocol engines remain in active development.
-
-- [x] TCP listener and connection lifecycle
-- [x] HTTP request parser
-- [x] HTTP response builder
-- [x] Static-file routes
-- [x] Bounded connection queue
-- [x] pthread worker pool
-- [x] Persistent connections (Keep-Alive)
-- [x] Request and connection timeouts
-- [x] Security and resource safeguards
-- [x] Adaptive admission controller (QLAAC)
-- [x] Metrics endpoint (`/metrics`)
-- [x] Monitoring dashboard
-- [x] Automated functional tests
-- [x] Defensive parsing tests
-- [x] Reproducible benchmark scripts
-- [x] Experimental results and analysis
-- [x] Final project report PDF ([`deliverables/report/HTTP11_Web_Server_Project_Report.pdf`](deliverables/report/HTTP11_Web_Server_Project_Report.pdf))
-- [x] Final project presentation PPT ([`deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx`](deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx))
+- [Project Team](#project-team)
+- [Project Overview & Motivation](#project-overview--motivation)
+- [Key Architectural Features](#key-architectural-features)
+- [System Architecture & Request Lifecycle](#system-architecture--request-lifecycle)
+- [QLAAC Adaptive Controller](#qlaac-adaptive-controller)
+- [Technology Stack](#technology-stack)
+- [Quick Start & Build Instructions](#quick-start--build-instructions)
+- [Verified API Endpoints](#verified-api-endpoints)
+- [Repository Structure](#repository-structure)
+- [Testing & Quality Assurance](#testing--quality-assurance)
+- [Empirical Benchmarking & Results](#empirical-benchmarking--results)
+- [Genuine Visual Evidence & Screenshots](#genuine-visual-evidence--screenshots)
+- [Academic Deliverables](#academic-deliverables)
+- [Engineering Limitations & Future Work](#engineering-limitations--future-work)
+- [Academic Context & Attribution](#academic-context--attribution)
 
 ---
 
-## Project Report and Presentation Deliverables
+## Project Team
 
-The dedicated academic deliverables for this Computer Networks project are organized in their respective directories:
+| Registration Number | Student Name | GitHub Profile / Contact |
+| :---: | :---: | :---: |
+| **24BCE0702** | **Yash Pradhan** | Team Contributor |
+| **24BCE0714** | **Anjini Pandey** | [jini0703](https://github.com/jini0703) |
 
-- **Project Report (PDF)**: [`deliverables/report/HTTP11_Web_Server_Project_Report.pdf`](deliverables/report/HTTP11_Web_Server_Project_Report.pdf) — Comprehensive 12-page academic technical report following IEEE/ACM formatting guidelines (covering theoretical foundations, networking architecture, implementation analysis, and empirical evaluation). Source Markdown: [`deliverables/report/HTTP11_Web_Server_Project_Report.md`](deliverables/report/HTTP11_Web_Server_Project_Report.md).
-- **Project Presentation (PPTX)**: [`deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx`](deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx) — Comprehensive 18-slide oral defense presentation in 16:9 widescreen format, including visual cards, embedded benchmark charts, live dashboard previews, and detailed speaker notes.
-
----
-
-## 1. Project Introduction
-
-Modern web servers like Nginx and Apache are complex, mature software systems. However, standard web applications rarely expose the underlying operating system and networking primitives that make scalable web communication possible.
-
-The objective of this project is to design and implement an academic-grade, highly performant **HTTP/1.1 Web Server from scratch in C17**. The server operates directly on raw POSIX TCP sockets (`AF_INET`, `SOCK_STREAM`) and POSIX threads (`pthreads`), completely eliminating any dependence on third-party HTTP parsing libraries or external server frameworks.
-
-Key areas of technical emphasis include:
-- **Transport-Layer Primitives**: Direct socket management, address binding, listen backlog tuning, and non-blocking stream I/O.
-- **Protocol Precision**: Strict adherence to RFC 9112 syntax, header tokenization, message framing, and persistent connection semantics.
-- **Controlled Concurrency**: A pre-allocated, fixed-size thread pool fed by a thread-safe, bounded FIFO connection queue.
-- **Defensive Engineering**: Mitigating slowloris attacks, malformed request fuzzing, and filesystem path traversal without relying on external security layers.
-- **Adaptive Overload Control**: Investigating an experimental Queue-and-Latency-Aware Admission Control (QLAAC) feedback loop.
-- **Reproducible Performance Evaluation**: Empirical benchmarking across varying concurrency levels, thread pool sizes, and payload types.
+*Course:* **Computer Networks Lab (BCSE308P)**
+*Academic Term:* **Fall Semester 2026–27**
+*School / Department:* **School of Computer Science and Engineering**
 
 ---
 
-## 2. Problem Statement
+## Project Overview & Motivation
 
-A naive socket-programming server typically accepts a connection, reads bytes until a newline is found, writes a hardcoded HTML string, and closes the connection. While functional for basic demonstrations, such an approach fails catastrophically under real-world networking conditions:
+Modern production web servers such as NGINX, Apache, and Envoy rely on complex event loops and third-party utility runtimes that abstract away the transport layer. In academic networking curricula, students often interact with HTTP purely through high-level frameworks (e.g., Express, Flask, Actix), which completely obscures how the operating system manages underlying network descriptors, socket queues, and thread coordination.
 
-1. **TCP Byte-Stream Semantics**: TCP is an unstructured stream of bytes, not a message-oriented protocol. A single `recv()` call is never guaranteed to contain an entire HTTP request, nor does a single `send()` guarantee transmission of all bytes. Naive implementations suffer from truncated reads, broken headers, and partial writes.
-2. **Concurrency & Thread Exhaustion**: Creating a new thread or process per connection (`fork-per-request`) leads to rapid memory exhaustion, kernel context-switch thrashing, and process table exhaustion under moderate concurrent load.
-3. **Unbounded Queueing & Bufferbloat**: Allowing pending connections to queue without hard boundaries leads to high latency, memory bloat, and server crash under traffic bursts.
-4. **Persistent Connection Management**: HTTP/1.1 mandates persistent connections (`Keep-Alive`) by default. The server must multiplex multiple sequential requests over a single TCP socket while respecting timeouts and request limits.
-5. **Slow Clients & Resource Starvation**: Slow or hostile clients transmitting one byte every few seconds can exhaust available worker threads (Slowloris attack) unless explicit socket deadlines and read/write timeouts are enforced.
-6. **Path Traversal & Filesystem Vulnerabilities**: Resolving requested URIs directly against local disk paths invites traversal attacks (e.g., `../../etc/passwd`), requiring strict canonical path validation.
-7. **Lack of Empirical Observability**: Most academic servers fail to measure or understand internal queue dynamics, tail latency ($p95$/$p99$), or degradation patterns under severe load.
+This project demystifies transport and application layer interaction by engineering an industrial-grade HTTP/1.1 server from first principles in **strict ISO C17**:
+1. **Bridging Byte Streams to Protocol Frames:** TCP is an unstructured, stream-oriented transport with no message boundaries. The application must handle partial reads, arbitrary chunking, header tokenization, and framing delimitation without memory corruption.
+2. **Deterministic Resource Bounds:** Naive "thread-per-client" or "fork-per-connection" models trigger kernel context-switch thrashing and virtual memory exhaustion ($10,000 \times 8\text{ MB} = 80\text{ GB}$). Our server enforces strict thread pool and circular queue limits.
+3. **Bufferbloat & Tail-Latency Degeneracy:** Under burst load, unmanaged queues accumulate connections. By Little's Law ($L = \lambda W$), queue wait time explodes, degrading tail latency ($p99 > 400\text{ ms}$). We introduce **QLAAC**, a closed-loop controller that sheds excess load early via HTTP 503 (`Retry-After: 5`) to preserve low latency for admitted connections.
+4. **Defensive Systems Programming:** Robust mitigation of directory traversal (`realpath`), header overflow attacks (8 KB limit), body overflows (10 MB limit), and Slowloris starvation via socket receive/send timeouts (`SO_RCVTIMEO` / `SO_SNDTIMEO`).
 
 ---
 
-## 3. Project Objectives
+## Key Architectural Features
 
-1. **Raw Socket Transport**: Implement a robust TCP listener and connection manager using raw POSIX socket APIs (`socket`, `setsockopt`, `bind`, `listen`, `accept`).
-2. **From-Scratch HTTP/1.1 Parser**: Develop a zero-dependency streaming request parser adhering to RFC 9112 grammar.
-3. **Response Serialization**: Build a modular HTTP response engine generating standards-compliant status codes, headers, and formatted payloads.
-4. **Static File Serving & Routing**: Implement secure static file delivery using Linux `sendfile(2)` and dynamic routing for virtual endpoints.
-5. **Fixed-Size Worker Pool**: Construct a thread pool using `pthreads` to eliminate runtime thread creation overhead.
-6. **Bounded Connection Queue**: Build a synchronized, thread-safe circular FIFO queue with strict capacity boundaries using mutexes and condition variables.
-7. **Persistent Connections**: Support sequential HTTP/1.1 keep-alive connections with timeout mechanisms and maximum request counters.
-8. **Defensive Resource Safeguards**: Enforce header size limits (8 KB), body limits (10 MB), path canonicalization (`realpath`), and socket timeouts.
-9. **Experimental Overload Control**: Design and evaluate Queue-and-Latency-Aware Admission Control (QLAAC) across NORMAL, CAUTION, and OVERLOAD states.
-10. **Thread-Safe Telemetry**: Build a real-time metrics collector tracking queue depth, active workers, throughput, and latency percentiles.
-11. **Monitoring Dashboard**: Develop a web-based status portal visualizing telemetry polled from the `/metrics` endpoint.
-12. **Rigorous Benchmarking**: Execute repeatable experiments comparing baseline and adaptive architectures across documented workloads.
+- **Raw POSIX Socket Transport:** IPv4/IPv6 stream listener utilizing `SO_REUSEADDR`, `TCP_NODELAY` (Nagle disabling for low latency), and non-blocking polling.
+- **Fixed-Size pthread Worker Pool:** Pre-allocated pool (configurable, default 4 threads) eliminating runtime thread-fork latency and avoiding process table exhaustion.
+- **Thread-Safe Bounded FIFO Connection Queue:** Circular buffer (default capacity 64 connections) synchronized via POSIX mutual exclusion (`pthread_mutex_t`) and condition variables (`pthread_cond_t`).
+- **Streaming RFC 9112 Parser:** Zero-copy request tokenization, case-insensitive header lookup, strict `Host` header enforcement, and exact `Content-Length` framing.
+- **Persistent HTTP/1.1 Connections (Keep-Alive):** Multiplexes sequential requests over a single TCP socket with configurable idle timeouts and request counters.
+- **Zero-Copy Static File Delivery:** Employs Linux kernel `sendfile(2)` to stream disk blocks directly to network sockets without user-space buffer copying.
+- **Canonical Filesystem Sandboxing:** Resolves all URI paths using `realpath(3)` to strictly prevent parent-directory traversal (`../`, `%2e%2e`).
+- **Real-Time Observability Engine:** In-memory lock-free reservoir sampling computing sliding-window RPS and rolling latency percentiles ($p50, p95, p99$).
+- **Live HTML5 Telemetry Dashboard:** Integrated single-page web dashboard displaying live cards, Canvas throughput/latency histories, and an interactive diagnostic console.
+- **Queue-and-Latency-Aware Admission Control (QLAAC):** 3-state adaptive controller (`NORMAL`, `CAUTION`, `OVERLOAD`) with hysteresis dampening.
+- **Complete Test Harness:** 49 passing test suites (26 C17 unit tests, 23 Python RFC & security integration tests).
 
 ---
 
-## 4. Project Scope
+## System Architecture & Request Lifecycle
 
-```text
-+-------------------------------------------------------+-------------------------------------------------------+
-| Core In-Scope Features (Current Project Target)       | Planned Future Extensions (Out of Current Scope)      |
-+-------------------------------------------------------+-------------------------------------------------------+
-| • Raw POSIX TCP socket listener (IPv4/IPv6)          | • TLS/HTTPS encryption (OpenSSL integration)          |
-| • Fixed-size pthread worker pool                      | • Chunked transfer-encoding request body decoding     |
-| • Thread-safe bounded connection queue                | • HTTP/2 or HTTP/3 multiplexed framing               |
-| • Streaming RFC 9112 HTTP/1.1 parser                 | • Range requests (206 Partial Content)                |
-| • GET, HEAD, and bounded POST request handling        | • Dynamic CGI / FastCGI scripting execution           |
-| • Static file serving with Linux sendfile(2)          | • Dynamic worker thread pool resizing                |
-| • Sequential persistent connections (Keep-Alive)     | • Asynchronous event-loop architecture (epoll/io_uring)|
-| • Path traversal prevention via realpath(3)           | • HTTP gzip / deflate compression                     |
-| • Real-time /metrics JSON telemetry endpoint          |                                                       |
-| • Experimental QLAAC adaptive admission control       |                                                       |
-| • Automated unit & fuzzing test suites in C & Python  |                                                       |
-| • Repeatable benchmarking framework (wrk integration) |                                                       |
-+-------------------------------------------------------+-------------------------------------------------------+
+The server follows a decoupled producer-consumer architecture separating the I/O connection ingestion loop from request execution workers.
+
+```
+                           +------------------------+
+                           |  Client TCP Connection |
+                           +-----------+------------+
+                                       |
+                                       v
+                           +------------------------+
+                           |   POSIX TCP Listener   |
+                           |  (socket, bind, listen)|
+                           +-----------+------------+
+                                       |
+                                       v
+                           +------------------------+
+                           |     QLAAC Controller   | <--- (Monitors Queue, Workers,
+                           |  Admission Evaluation  |       and Rolling p95 Latency)
+                           +-----------+------------+
+                                       |
+                     +-----------------+-----------------+
+                     |                                   |
+         [NORMAL / CAUTION State]                [OVERLOAD State]
+                     |                                   |
+                     v                                   v
+        +-------------------------+         +-------------------------+
+        | Bounded Circular Queue  |         | Immediate HTTP 503 Shed |
+        | (64 Connections, FIFO)  |         | (Retry-After: 5 Header) |
+        +------------+------------+         +-------------------------+
+                     |
+                     v  (pthread_cond_signal)
+        +-------------------------+
+        | Fixed-Size Worker Pool  |
+        | (4x POSIX pthreads)     |
+        +------------+------------+
+                     |
+                     v
+        +-------------------------+
+        |  RFC 9112 Parser Engine |
+        | (Zero-copy Tokenizer)   |
+        +------------+------------+
+                     |
+                     v
+        +-------------------------+
+        |    Endpoint Router      |
+        +-----+------+------+-----+
+              |      |      |
+   +----------+      |      +------------+
+   v                 v                   v
+[GET /health]  [GET /metrics]      [POST /api/echo]  [Static File sendfile(2)]
 ```
 
+*Detailed Architecture Diagram:* [`results/plots/fig4_system_architecture.png`](results/plots/fig4_system_architecture.png)
+
+### Request Execution Steps
+1. **Ingress & Handshake:** Client performs TCP 3-way handshake; OS queues connection in kernel backlog.
+2. **Accept & Assessment:** Main listener thread calls `accept(2)`. The QLAAC controller evaluates worker saturation, current queue depth, and rolling tail latency.
+3. **Queue Enqueue:** If admitted, socket descriptor is pushed to the thread-safe circular FIFO buffer; sleeping worker is awakened via `pthread_cond_signal`.
+4. **Worker Dispatch:** Worker retrieves socket, enforces socket receive deadline (`SO_RCVTIMEO`), and reads byte stream into streaming buffer.
+5. **Streaming Parsing:** The RFC 9112 parser processes tokens without allocating memory, extracting method, URI, headers, and body boundary.
+6. **Route Dispatch:** Router evaluates URI:
+   - `/health`: Serializes server liveness status JSON.
+   - `/metrics`: Serializes atomic telemetry snapshot (connections, throughput, percentiles, QLAAC state).
+   - `/api/echo`: Reads Content-Length bounded payload and echoes body.
+   - Static resources: Invokes `realpath(3)` to verify sandbox integrity, reads file metadata, and calls `sendfile(2)`.
+7. **Keep-Alive or Close:** If `Connection: keep-alive` is active and limits are respected, socket remains open for subsequent requests; otherwise, worker closes descriptor cleanly.
+
 ---
 
-## 5. System Architecture
+## QLAAC Adaptive Controller
 
-The server architecture separates concerns into discrete, decoupled layers: Network Transport, Admission Control, Concurrency Pool, Protocol Parsing, Routing, and Observability.
+Queue-and-Latency-Aware Admission Control (**QLAAC**) is an experimental closed-loop controller designed to mitigate tail-latency degradation (bufferbloat) in multi-threaded servers under heavy concurrency.
 
-```mermaid
-flowchart TD
-    subgraph ClientsLayer ["Client Layer"]
-        C1[HTTP Client 1]
-        C2[HTTP Client 2]
-        CN[HTTP Client N]
-    end
-
-    subgraph TransportLayer ["Network & Admission Layer"]
-        Listener["TCP Listener Thread<br/>(socket, bind, listen, accept)"]
-        QLAAC["QLAAC Controller<br/>(Admission & Shedding Policy)"]
-        Queue["Bounded Connection Queue<br/>(Capacity N | Mutex + CondVars)"]
-    end
-
-    subgraph ConcurrencyLayer ["Worker Pool Layer"]
-        W1["Worker Thread 1"]
-        W2["Worker Thread 2"]
-        WM["Worker Thread M"]
-    end
-
-    subgraph ProcessingLayer ["HTTP Core Engine"]
-        Parser["RFC 9112 Parser<br/>(Streaming State Machine)"]
-        Router["Request Router<br/>(/metrics, /health, static)"]
-        StaticEngine["Static File Engine<br/>(Path Sandbox & sendfile)"]
-        RespEngine["HTTP Response Builder<br/>(Headers, Framing, Codes)"]
-    end
-
-    subgraph TelemetryLayer ["Observability Engine"]
-        Metrics["Metrics Collector<br/>(Queue Depth, Latency, RPS)"]
-        Dashboard["Web Monitoring UI<br/>(/metrics Endpoint)"]
-    end
-
-    C1 & C2 & CN -->|TCP Handshake| Listener
-    Listener <-->|Check Admission / 503| QLAAC
-    Listener -->|Push client_fd| Queue
-    Queue -->|Pop client_fd| W1 & W2 & WM
-
-    W1 & W2 & WM -->|Parse Bytes| Parser
-    Parser -->|HttpRequest| Router
-    Router -->|Serve Asset| StaticEngine
-    Router -->|Internal Response| RespEngine
-    StaticEngine -->|File Stream| RespEngine
-    RespEngine -->|Send Response| C1 & C2 & CN
-
-    W1 & W2 & WM -.->|Report Request Metrics| Metrics
-    Queue -.->|Report Queue Depth| Metrics
-    Metrics -.->|Feed p95 Latency & Load| QLAAC
-    Metrics -.->|Serve JSON Telemetry| Dashboard
+```
+       +-------------------------------------------------------+
+       |                                                       |
+       v                                                       |
++--------------+    Worker >= 85% or Queue >= 70%       +---------------+
+|    NORMAL    | -------------------------------------> |    CAUTION    |
+| (Safe State) | <------------------------------------- | (Throttling)  |
++--------------+        3 Consecutive Healthy Windows    +---------------+
+       |                                                       |
+       |                                                       |
+       |   Queue >= 90%, p95 >= 150ms, or                      |
+       |   Saturated Workers + Growing Queue (>= 70%)          |
+       +-----------------------------------------------------> |
+                                                               v
+                                                        +---------------+
+                                                        |   OVERLOAD    |
+                                                        | (503 Shedding)|
+                                                        +---------------+
+                                                               |
+                                5 Consecutive Healthy Windows  |
+                                (Hysteresis Dampening)         |
+                                +------------------------------+
 ```
 
----
+*State Machine Diagram:* [`results/plots/fig5_qlaac_state_machine.png`](results/plots/fig5_qlaac_state_machine.png)
 
-## 6. HTTP Request Lifecycle
+### Controller Invariants & Thresholds
 
-Every client connection traverses a deterministic, bounded lifecycle:
+| State | Operational Behavior | Entry Invariant | Exit / Recovery Rule |
+| :--- | :--- | :--- | :--- |
+| **`NORMAL`** | All incoming connections and requests admitted. Full persistent Keep-Alive connections supported. | Worker util $< 85\%$, Queue occupancy $< 70\%$, $p95$ latency $< 50\text{ ms}$. | Transitions to `CAUTION` if any caution threshold is breached. |
+| **`CAUTION`** | All requests admitted. Keep-Alive is throttled by injecting `Connection: close` headers to drain lingering persistent connections and relieve queue pressure. | Worker util $\ge 85\%$, Queue occupancy $\ge 70\%$, or $p95 \ge 50\text{ ms}$. | Steps down to `NORMAL` after 3 consecutive healthy sampling windows. |
+| **`OVERLOAD`** | Immediate request shedding via `HTTP/1.1 503 Service Unavailable` with `Retry-After: 5` header. Preserves bounded latency for admitted work. | Queue occupancy $\ge 90\%$, $p95 \ge 150\text{ ms}$, or saturated workers ($100\%$) coupled with growing queue ($\ge 70\%$) or sustained pressure ($\ge 3$ windows). | Requires **5 consecutive healthy sampling windows** (hysteresis dampening) before stepping down to `CAUTION`. |
 
-1. **TCP Connection Establishment**: Client initiates a 3-way TCP handshake (`SYN -> SYN-ACK -> ACK`).
-2. **Acceptance**: The server's listener thread wakes on `accept()`, receiving a client socket descriptor and address.
-3. **Admission Evaluation**: The listener checks queue capacity and queries the QLAAC controller. If the system is in `OVERLOAD`, the connection is rapidly handled with an HTTP `503 Service Unavailable` response and closed.
-4. **Queue Enqueue**: Admitted connections are placed into the bounded circular FIFO queue, signaling a waiting worker via `pthread_cond_signal(&not_empty)`.
-5. **Worker Dequeue**: An available worker thread pops the connection descriptor and takes exclusive ownership of the socket.
-6. **Streaming Parse**: The worker invokes `tcp_read_stream()` and feeds bytes incrementally into `http_parser_consume()`. Because TCP is a byte stream, reads loop until headers are terminated by `\r\n\r\n`.
-7. **Route Resolution**: `router_dispatch()` checks the requested method and URI against route tables.
-8. **Response Generation**:
-   - For static assets: The path is canonicalized via `realpath()`. If valid, headers are generated and the file is streamed via `sendfile(2)`.
-   - For `/metrics`: A real-time JSON snapshot is serialized and written directly to the socket.
-9. **Response Transmission**: Headers and body are transmitted using `tcp_write_all()`, ensuring all bytes are flushed even across partial network writes.
-10. **Connection Reuse or Teardown**: If `Connection: keep-alive` is active and request limits have not been reached, the worker loops to await the next request on the same socket; otherwise, `close()` is called.
-11. **Telemetry Update**: Latency, status codes, and bytes transferred are recorded into `MetricsCollector`.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant C as HTTP Client
-    participant L as Listener Thread
-    participant Q as Bounded Queue
-    participant W as Worker Thread
-    participant M as Metrics Collector
-
-    C->>L: TCP 3-Way Handshake
-    L->>L: accept() -> client_fd
-    L->>Q: push(client_conn)
-    Note over Q: Acquire mutex, verify bounds, signal cond_var
-    Q-->>W: pop(client_conn)
-    Note over W: Worker takes sole ownership of descriptor
-
-    loop Persistent Request Loop
-        W->>C: Read TCP Stream (recv)
-        Note over W: Parse Request Line & Headers (RFC 9112)
-        Note over W: Validate Content-Length & Body Bounds
-        W->>W: Route & Generate Response
-        W->>C: Write Response (send / sendfile)
-        W->>M: Record Latency & Status Code
-        Note over W: Check Keep-Alive limits & timeouts
-    end
-
-    W->>C: Close TCP Socket (FIN)
-    Note over W: Return to queue wait loop
-```
+*Source Implementation:* [`src/adaptive_controller.c`](src/adaptive_controller.c) | Header: [`include/adaptive_controller.h`](include/adaptive_controller.h)
 
 ---
 
-## 7. Multithreading and Synchronization Model
+## Technology Stack
 
-To achieve predictable performance under load, the server employs a fixed worker-pool concurrency architecture:
-
-- **Fixed-Size Worker Pool**: Spawns $M$ threads at startup (configured in `server.conf`). Avoids kernel thread creation costs and limits concurrent execution to match available CPU resources.
-- **Bounded Connection Queue**: Fixed-capacity circular buffer ($N$ slots). Solves the unbounded bufferbloat problem; prevents excessive memory usage during traffic bursts.
-- **Synchronization Primitives**:
-  - `pthread_mutex_t`: Protects queue head, tail, and count during enqueue/dequeue operations.
-  - `pthread_cond_t not_empty`: Workers sleep on this condition variable when the queue has 0 entries.
-  - `pthread_cond_t not_full`: The listener blocks or yields on this variable when queue reaches capacity.
-- **Descriptor Ownership Discipline**: Only **one** thread interacts with a client descriptor at any time. The listener transfers ownership upon enqueue, the worker assumes ownership on dequeue, and the worker alone performs `close()`.
-- **Graceful Shutdown**: The main thread intercepts `SIGINT`/`SIGTERM`, sets an atomic shutdown flag, broadcasts to all condition variables, drains pending work, and joins all worker threads via `pthread_join()`.
+- **Core Language:** C17 (ISO/IEC 9899:2018), compiled with GCC using strict flags (`-std=c17 -Wall -Wextra -Wpedantic -Wshadow -Wwrite-strings`).
+- **Networking APIs:** POSIX.1-2008 Berkeley Sockets (`sys/socket.h`, `netinet/in.h`, `netinet/tcp.h`, `arpa/inet.h`).
+- **Threading Engine:** POSIX Threads (`pthread.h`) with mutexes and condition variables.
+- **Zero-Copy I/O:** Linux Kernel `sendfile(2)` via `sys/sendfile.h`.
+- **Operating Environment:** POSIX-compliant Linux (tested on Linux 6.6 Kernel, Ubuntu 22.04 LTS via WSL2 on Windows 11 Host).
+- **Frontend Dashboard:** Pure HTML5, modern vanilla CSS with custom dark palette, Canvas 2D charts, and asynchronous Fetch API.
+- **Automated Testing:** C17 unit test harness (`tests/*.c`) and Python 3.10+ `unittest` integration harness (`tests/*.py`).
+- **Benchmarking & Analysis:** Python 3 concurrent client harness (`benchmark/run_experiment.py`), statistical verification script (`benchmark/verify_benchmark_statistics.py`), and Matplotlib.
 
 ---
 
-## 8. Proposed Adaptive Admission Control (QLAAC)
+## Quick Start & Build Instructions
 
-To study server behavior under extreme load, this project designs and evaluates an experimental overload mitigation mechanism: **Queue-and-Latency-Aware Admission Control (QLAAC)**.
-
-> **Research Status**: QLAAC is a proposed experimental controller under active evaluation. It is not presented as a completed innovation and will be empirically evaluated against a static queue baseline under identical workloads.
-
-### 8.1 Controller State Machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> NORMAL
-    NORMAL --> CAUTION: Queue > 70% OR Latency p95 > 50ms
-    CAUTION --> OVERLOAD: Queue > 90% OR Latency p95 > 150ms
-    OVERLOAD --> CAUTION: 5 Consecutive Healthy Samples
-    CAUTION --> NORMAL: 5 Consecutive Healthy Samples
-    OVERLOAD --> [*]: Server Shutdown
-```
-
-### 8.2 Operational States & Actions
-1. **NORMAL State**:
-   - Connection queue and latency metrics are within nominal limits.
-   - Standard admission policy; persistent connections (`Keep-Alive`) fully supported.
-2. **CAUTION State**:
-   - Queue occupancy breaches `queue_caution_threshold` (e.g. 70%) or $p95$ latency exceeds `latency_caution_ms` (e.g. 50 ms).
-   - Server tightens keep-alive limits, reduces idle timeouts, and signals clients to close idle connections.
-3. **OVERLOAD State**:
-   - Queue occupancy breaches `queue_overload_threshold` (e.g. 90%) or $p95$ latency exceeds `latency_overload_ms` (e.g. 150 ms).
-   - Immediate load shedding: Newly arriving connections are immediately returned an HTTP `503 Service Unavailable` with `Retry-After: 5` header and closed before workers become saturated.
-4. **Hysteresis Dampening**:
-   - Requires $K$ consecutive healthy sampling windows (default: 5) before transitioning down a tier to prevent rapid state oscillation (flapping).
-
----
-
-## 9. Technology Stack
-
-| Technology | Role / Purpose | Technical Rationale |
-| :--- | :--- | :--- |
-| **C17** | Core Server Implementation | Direct hardware/OS interface control; zero runtime overhead; strict standards compliance. |
-| **POSIX TCP Sockets** | Network Transport Layer | `socket`, `bind`, `listen`, `accept`, `setsockopt` for raw transport manipulation. |
-| **pthreads** | Worker Pool Concurrency | POSIX standard threading, mutexes (`pthread_mutex_t`), and condition variables (`pthread_cond_t`). |
-| **Linux / Ubuntu** | Development & Execution Host | Reference POSIX operating system environment with kernel diagnostic tooling. |
-| **POSIX File APIs** | Static Asset Handling | `open`, `fstat`, `realpath` for safe filesystem traversal and asset management. |
-| **`sendfile(2)`** | High-Performance Zero-Copy I/O | Transfers file data directly from kernel page cache to socket descriptor. |
-| **HTML5 / CSS / JS** | Observability Dashboard | Responsive web frontend polling `/metrics` for real-time visualization. |
-| **Python 3** | Test & Benchmark Orchestration | Scripting harness for functional verification, socket fuzzing, and benchmark aggregation. |
-| **curl** *(External)* | Functional Protocol Verification | Standard CLI utility for manual and automated HTTP/1.1 request validation. |
-| **wrk** *(External)* | Load Generation & Benchmarking | High-concurrency multithreaded HTTP benchmark generator for latency distributions. |
-| **Wireshark** *(External)* | Packet Inspection & Diagnostics | Protocol analyzer for inspecting TCP handshakes, packet fragmentation, and TCP RST flags. |
-| **Git & GitHub** | Version Control & Collaboration | Tracking incremental systems implementation and project documentation. |
-
----
-
-## 10. HTTP/1.1 Protocol Support & Standards Compliance
-
-The server targets compliance with the core provisions of [RFC 9112](https://www.rfc-editor.org/rfc/rfc9112.html):
-
-- **Request-Line Grammar**: `Method SP Request-URI SP HTTP-Version CRLF` strictly enforced.
-- **Supported Methods**: `GET`, `HEAD`, and bounded `POST`. Unsupported verbs return `405 Method Not Allowed`.
-- **Header Parsing**: Case-insensitive lookup (`strcasecmp`); whitespace trimming; 8 KB maximum header block limit.
-- **Framing & Content-Length**: Integer validation; conflicting or duplicate `Content-Length` headers rejected (`400 Bad Request`).
-- **Persistent Connections**: Sequential request handling over persistent sockets; idle timeouts; clean `Connection: close` termination.
-- **Defensive Error Handling**: Clear mapping to standard status codes (`200`, `204`, `301`, `400`, `403`, `404`, `405`, `408`, `413`, `414`, `431`, `500`, `503`).
-
----
-
-## 11. Security and Reliability Architecture
-
-The server implements multi-layered defensive safeguards:
-
-1. **Path Traversal Defense**: All candidate paths are canonicalized using `realpath(3)` and verified to reside strictly within `public_root`. Null bytes (`\0`) and directory listing attempts are blocked (`403 Forbidden`).
-2. **Slowloris Mitigation**: Socket receive (`SO_RCVTIMEO`) and send (`SO_SNDTIMEO`) timeouts (5s) terminate idle or trickle connections.
-3. **Buffer & Memory Bounds**: Hard limits on request lines (2 KB), headers (8 KB), and POST bodies (10 MB) prevent OOM vulnerabilities.
-4. **File Descriptor Leak Prevention**: Socket descriptors are strictly owned by assigned worker threads and guaranteed to close on all terminating execution paths.
-5. **Clean Signal Handling**: `SIGINT` and `SIGTERM` signals trigger coordinated worker pool draining and memory cleanup.
-
----
-
-## 12. Monitoring and Observability
-
-The server exposes real-time runtime telemetry via a thread-safe JSON endpoint (`/metrics`):
-
-- **Connection Metrics**: Total accepted connections, rejected connections, current queue depth.
-- **Worker Utilization**: Active worker thread count vs. total pool capacity.
-- **Throughput & Status**: Total completed requests, requests per second (RPS), status code breakdown (`2xx`, `3xx`, `4xx`, `5xx`).
-- **Latency Percentiles**: Rolling median ($p50$), 95th percentile ($p95$), and 99th percentile ($p99$) response times.
-- **QLAAC State**: Instantaneous controller state (`NORMAL`, `CAUTION`, `OVERLOAD`) and cumulative shedding events.
-
-The companion monitoring dashboard (`public/index.html`) visualizes these metrics in real time.
-
----
-
-## 13. Benchmarking and Experimental Methodology
-
-The evaluation strategy comprises five controlled experimental suites designed to collect empirical, reproducible performance data:
-
-- **Experiment A (Concurrency Scaling)**: Evaluates throughput and latency scaling across worker threads ($1, 2, 4, 8, 16$) and concurrent clients ($1, 10, 50, 100, 200$).
-- **Experiment B (Adaptive Overload Control)**: Compares static queue baseline against QLAAC under burst traffic, measuring tail latency ($p95$/$p99$), rejection rates, and recovery time.
-- **Experiment C (Persistent Connections)**: Quantifies latency and CPU differences between Keep-Alive enabled and `Connection: close`.
-- **Experiment D (Workload Variations)**: Measures I/O throughput across 1 KB, 100 KB, and 5 MB static files, contrasting user-space writes with `sendfile(2)`.
-- **Experiment E (Reliability & Fuzzing)**: Fuzzes malformed request lines, oversized headers, and slowloris trickle patterns to confirm defensive stability.
-
-### Initial Testing Configuration Matrix
-
-| Parameter | Planned Evaluation Values |
-| :--- | :--- |
-| **Worker Thread Count** | $1, 2, 4, 8, 16$ |
-| **Concurrent Client Connections** | $1, 10, 50, 100, 200$ |
-| **Resource Sizes** | 1 KB, 100 KB, 5 MB static files; `/metrics` API endpoint |
-| **Connection Mode** | Separate connection per request; persistent Keep-Alive |
-| **Load Patterns** | Gradual ramp, sustained steady state, sudden step-burst |
-| **Server Policy** | Single-threaded baseline, fixed thread pool, adaptive QLAAC |
-
-### Empirical Benchmarking Results (40-Trial Controlled Evaluation)
-
-Empirical evaluation across 40 completed trials (5 per concurrency level for Baseline vs. QLAAC) under Linux 6.6 x86_64:
-
-| Concurrency ($C$) | Configuration | 2xx RPS (Mean $\pm$ Std) | $p50$ Latency (ms) | $p95$ Latency (ms) | $p99$ Latency (ms) | 5xx Rejections (Mean $\pm$ Std) | Shedding Rate (%) |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **2** | Baseline | 13,929.24 $\pm$ 334.23 | 0.13 $\pm$ 0.01 | 0.23 $\pm$ 0.01 | 0.31 $\pm$ 0.02 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
-| **2** | QLAAC | 14,665.40 $\pm$ 610.30 | 0.12 $\pm$ 0.00 | 0.22 $\pm$ 0.03 | 0.33 $\pm$ 0.05 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
-| **8** | Baseline | 6,629.38 $\pm$ 148.21 | 0.54 $\pm$ 0.01 | 1.38 $\pm$ 0.04 | 29.09 $\pm$ 0.50 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
-| **8** | QLAAC | 2,129.26 $\pm$ 50.35 | 1.55 $\pm$ 0.02 | 2.83 $\pm$ 0.03 | 3.55 $\pm$ 0.06 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
-| **32** | Baseline | 6,860.38 $\pm$ 107.11 | 0.52 $\pm$ 0.01 | 1.34 $\pm$ 0.03 | 204.00 $\pm$ 2.94 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
-| **32** | QLAAC | 1,970.40 $\pm$ 55.83 | 10.46 $\pm$ 0.26 | 14.31 $\pm$ 0.66 | 16.55 $\pm$ 1.00 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
-| **64** | Baseline | 6,828.52 $\pm$ 157.91 | 0.52 $\pm$ 0.01 | 1.38 $\pm$ 0.05 | 440.33 $\pm$ 9.21 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
-| **64** | QLAAC | 638.12 $\pm$ 126.44 | 19.61 $\pm$ 6.35 | 28.76 $\pm$ 0.59 | 161.18 $\pm$ 159.88 | 16,475.40 $\pm$ 969.70 | 72.14% $\pm$ 5.15% |
-
-#### Key Empirical Insights:
-1. **Sub-Millisecond Line Rate**: At $C=2$, the server processes $>14,600$ requests/sec with a median latency of $0.12\text{ ms}$.
-2. **Bufferbloat Prevention**: At $C=64$, Baseline queue saturation causes $p99$ tail latency to degrade to $440.33\text{ ms}$.
-3. **Tail Latency Clamping**: QLAAC transitions into `OVERLOAD`, shedding excess traffic via HTTP 503 (`Retry-After: 5`) and holding admitted request $p99$ tail latency to $161.18\text{ ms}$ (**2.73x improvement**). At $C=64$, the per-trial mean 5xx count is $16,475.40 \pm 969.70$ ($82,377$ total across all 5 trials), representing an average shedding rate of $72.14\% \pm 5.15\%$.
-
-#### Benchmark Visualizations:
-- **Throughput Scaling**: [`results/plots/fig1_throughput_comparison.png`](results/plots/fig1_throughput_comparison.png)
-- **Tail Latency Distribution**: [`results/plots/fig2_latency_p99_comparison.png`](results/plots/fig2_latency_p99_comparison.png)
-- **Admission Trade-off & Shedding**: [`results/plots/fig3_qlaac_admission_tradeoff.png`](results/plots/fig3_qlaac_admission_tradeoff.png)
-- **Systems Architecture**: [`results/plots/fig4_system_architecture.png`](results/plots/fig4_system_architecture.png)
-- **QLAAC State Machine**: [`results/plots/fig5_qlaac_state_machine.png`](results/plots/fig5_qlaac_state_machine.png)
-
----
-
-## 14. Repository Structure
-
-```text
-.
-├── README.md                      # Comprehensive project guide and architectural specification
-├── .gitignore                     # Git ignore rules for build artifacts, OS files, and logs
-├── LICENSE                        # Project license notice and terms
-├── Makefile                       # C17 Linux build automation with strict compiler warnings
-│
-├── config/
-│   └── server.conf.example        # Documented server configuration file template
-│
-├── include/                       # Public C header files (interfaces and data structures)
-│   ├── server.h                   # Top-level server lifecycle, configuration, and event loop
-│   ├── tcp_socket.h               # Raw POSIX TCP socket abstraction and robust stream I/O
-│   ├── http_parser.h              # RFC 9112 streaming request parser interface
-│   ├── http_response.h            # Response formatting, status codes, and serialization
-│   ├── thread_pool.h              # Fixed-size pthread worker pool interface
-│   ├── connection_queue.h         # Thread-safe bounded connection queue
-│   ├── metrics.h                  # Thread-safe runtime telemetry collector
-│   └── adaptive_controller.h      # QLAAC adaptive overload admission controller
-│
-├── src/                           # C source modules (implementations and scaffolds)
-│   ├── main.c                     # Starter entry point and scaffold diagnostic utility
-│   ├── server.c                   # Top-level lifecycle orchestrator
-│   ├── tcp_socket.c               # POSIX socket networking implementation
-│   ├── http_parser.c              # Streaming HTTP/1.1 request parser
-│   ├── http_response.c            # Response formatting and status phrase mappings
-│   ├── router.c                   # Route dispatching and endpoint mapping
-│   ├── static_files.c             # Secure static file resolution and sendfile support
-│   ├── thread_pool.c              # Worker thread lifecycle and management
-│   ├── connection_queue.c         # Bounded circular queue synchronization logic
-│   ├── metrics.c                  # Metrics counters and JSON formatting
-│   └── adaptive_controller.c      # QLAAC state machine and admission logic
-│
-├── public/                        # Static assets and web monitoring interface
-│   ├── index.html                 # Static demonstration page and live telemetry dashboard
-│   └── demo-assets/               # Static assets (images, stylesheets, scripts)
-│       └── .gitkeep
-│
-├── tests/                         # Automated testing and validation suites
-│   ├── test_parser.c              # Unit test runner for HTTP request parser
-│   ├── test_responses.c           # Unit test runner for HTTP response formatting
-│   ├── test_keepalive.py          # Python persistent connection test suite
-│   ├── test_malformed_requests.py # Python malformed request fuzzing suite
-│   └── test_security.py           # Python path traversal and boundary test suite
-│
-├── benchmark/                     # Benchmarking harness and load testing tools
-│   ├── README.md                  # Benchmarking guide, tooling overview, and instructions
-│   ├── run_experiment.py          # Automated experiment runner and CSV logger
-│   └── configurations/            # Parameter profiles for repeatable benchmark runs
-│       └── .gitkeep
-│
-├── results/                       # Empirical benchmark outputs (version-controlled data)
-│   ├── raw/                       # Unprocessed CSV logs from benchmark trials
-│   │   └── .gitkeep
-│   ├── processed/                 # Aggregated summary statistics
-│   │   └── .gitkeep
-│   └── plots/                     # Rendered performance charts and latency distributions
-│       └── .gitkeep
-│
-├── docs/                          # In-depth technical documentation
-│   ├── architecture.md            # Detailed subsystem architecture and sequence diagrams
-│   ├── protocol-support.md        # RFC 9112 compliance specification and method matrix
-│   ├── security-design.md         # Threat model, input validation, and defensive measures
-│   └── experiment-methodology.md  # Experimental design, QLAAC evaluation, and matrix
-│
-└── deliverables/                  # Dedicated academic deliverable locations
-    ├── report/
-    │   └── README.md              # Final Report documentation and outline for HTTP11_Web_Server_Project_Report.pdf
-    └── presentation/
-        └── README.md              # Final Presentation documentation and outline for HTTP11_Web_Server_Project_Presentation.pptx
-```
-
----
-
-## 15. Build and Run Instructions
-
-### Prerequisites (Linux / Ubuntu)
-
-Install the C build toolchain, Python testing runtime, and benchmarking utilities:
+### Prerequisites (Debian / Ubuntu / WSL2)
 
 ```bash
-# Update package index
+# Update repository index and install build toolchain
 sudo apt-get update
-
-# Install GCC compiler, GNU Make, and build tools
-sudo apt-get install -y build-essential gcc make
-
-# Install Python 3 for test orchestration
-sudo apt-get install -y python3 python3-pip
-
-# Optional: Install wrk for HTTP load generation benchmarking
-sudo apt-get install -y wrk
+sudo apt-get install -y build-essential gcc make python3 python3-pip curl
 ```
 
-### Building the Starter Scaffold Binary
-
-The provided `Makefile` compiles the scaffold entry-point binary with strict C17 compiler warnings enabled (`-std=c17 -Wall -Wextra -Wpedantic`):
+### 1. Compile the Server
 
 ```bash
-# Build the scaffold binary
+# Clone the repository
+git clone https://github.com/jini0703/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets.git
+cd Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets
+
+# Build the server executable
 make all
 
-# Verify scaffold integrity and compiler flags
+# Verify scaffold and compiler standards
 ./bin/server --check-scaffold
-
-# View command-line usage flags
-./bin/server --help
 ```
 
-### Running the Web Server
+### 2. Start the Server
 
 ```bash
-# Launch server with default configuration
+# Option A: Start with example configuration file
 ./bin/server -c config/server.conf.example
 
-# Or launch with custom parameters and QLAAC adaptive admission control enabled
+# Option B: Start directly with custom CLI flags and QLAAC adaptive controller enabled
 ./bin/server -p 8080 -d ./public -t 4 -a
 ```
 
-### Executing Test Suites
+### 3. Open the Monitoring Dashboard
+
+Navigate to the live dashboard in your web browser:
+```text
+http://127.0.0.1:8080/
+```
+
+### 4. Verify Endpoints via Terminal
 
 ```bash
-# Compile and execute all C unit tests and Python regression test suites
+# Test 1: Liveness / Readiness health check
+curl -i http://127.0.0.1:8080/health
+
+# Test 2: In-memory runtime telemetry snapshot
+curl -s http://127.0.0.1:8080/metrics
+
+# Test 3: HTTP POST body echo endpoint
+curl -i -X POST http://127.0.0.1:8080/api/echo \
+     -H "Content-Type: text/plain" \
+     -d "Hello from systems networking verification!"
+
+# Test 4: Static file serving (dashboard HTML)
+curl -i http://127.0.0.1:8080/index.html
+```
+
+### 5. Safe Shutdown
+
+The server catches `SIGINT` (Ctrl+C) and `SIGTERM`, safely broadcasting shutdown signals to all worker threads, draining the connection queue, and closing active socket descriptors:
+```bash
+# Press Ctrl+C in server terminal, or:
+pkill -INT server
+```
+
+---
+
+## Verified API Endpoints
+
+| Method | Endpoint | Purpose | Implemented Behavior & Status Codes |
+| :--- | :--- | :--- | :--- |
+| `GET`, `HEAD` | `/` or `/index.html` | Systems Monitoring Dashboard | Zero-copy delivery via `sendfile(2)`. Returns `200 OK` (`text/html`). |
+| `GET`, `HEAD` | `/health` or `/status` | Server Liveness Probe | Returns `200 OK` with JSON payload `{"status":"healthy","server":"HTTP-Server-C17/1.0.0","protocol":"HTTP/1.1"}`. |
+| `GET`, `HEAD` | `/metrics` | Telemetry Observability | Returns `200 OK` with atomic telemetry JSON (queue depth, active workers, RPS, percentiles, QLAAC state). |
+| `POST` | `/api/echo` | Payload Echo Verification | Reads `Content-Length` bounded body (up to 10 MB) and echoes bytes with matching `Content-Type`. Returns `200 OK`. |
+| `GET`, `HEAD` | `/demo-assets/<file>` | Static Asset Streaming | Streams static files from `./public`. Returns `200 OK`, or `404 Not Found` if file does not exist. |
+| *Any* | *Path Traversal* (e.g. `../../`) | Security Defense | Blocked by `realpath(3)` sandbox check. Returns `404 Not Found` or `403 Forbidden`. |
+| *Unsupported* | `TRACE`, `PUT`, `DELETE` | Method Restriction | Returns `501 Not Implemented` or `405 Method Not Allowed`. |
+| *Any* | *Overload Condition* | QLAAC Overload Protection | Under critical queue/latency in `OVERLOAD`, returns `503 Service Unavailable` with `Retry-After: 5`. |
+
+---
+
+## Repository Structure
+
+```
+.
+├── CLAUDE_PACKAGE_README.md       # Orientation guide for Claude academic report generation
+├── README.md                      # [This Document] Primary project landing page & specification
+├── Makefile                       # C17 compilation rules, compiler flags, and test runners
+├── LICENSE                        # Project MIT License (Yash Pradhan & Anjini Pandey)
+│
+├── src/                           # Core C17 implementation modules
+│   ├── main.c                     # Server entry point, CLI flags, and signal handler
+│   ├── server.c                   # Connection accept loop, dispatch, and keep-alive state
+│   ├── tcp_socket.c               # Raw POSIX TCP sockets, non-blocking polling, socket options
+│   ├── thread_pool.c              # Fixed-size pthread worker pool lifecycle
+│   ├── connection_queue.c         # Thread-safe bounded circular FIFO (mutex + condvars)
+│   ├── http_parser.c              # Zero-copy streaming RFC 9112 HTTP/1.1 request parser
+│   ├── http_response.c            # RFC 9112 response builders, status codes, standard headers
+│   ├── router.c                   # REST endpoint dispatcher (/health, /metrics, /api/echo)
+│   ├── static_files.c             # sendfile(2) zero-copy static asset delivery & security checks
+│   ├── adaptive_controller.c      # Queue-and-Latency-Aware Admission Control (QLAAC)
+│   ├── metrics.c                  # Rolling window latency tracking, atomic counters, JSON exporter
+│   └── util.c                     # Monotonic time helpers, RFC 1123 date formatting, strings
+│
+├── include/                       # Modular C header definitions and public APIs
+│   ├── server.h, tcp_socket.h, thread_pool.h, connection_queue.h,
+│   ├── http_parser.h, http_response.h, router.h, static_files.h,
+│   ├── adaptive_controller.h, metrics.h, util.h, config.h
+│
+├── public/                        # Static web assets & live frontend dashboard
+│   └── index.html                 # Complete single-page systems monitoring dashboard (HTML/CSS/JS)
+│
+├── config/                        # Server configuration files
+│   └── server.conf.example        # Reference configuration with safe defaults
+│
+├── docs/                          # Comprehensive technical design documentation
+│   ├── architecture.md            # Modular concurrency and data-plane architecture
+│   ├── experiment-methodology.md  # Formal experimental protocol and measurement rules
+│   ├── qlaac-state-machine.md     # Mathematical model, invariants, and hysteresis dampening
+│   ├── rfc-compliance.md          # RFC 9112 / RFC 9110 compliance matrix
+│   └── security-model.md          # Threat model, input validation, directory traversal prevention
+│
+├── tests/                         # Automated verification test suites
+│   ├── test_controller.c          # C unit tests for QLAAC state transitions & hysteresis
+│   ├── test_parser.c              # C unit tests for RFC 9112 compliance & error paths
+│   ├── test_queue.c               # C unit tests for thread-safe circular FIFO bounds
+│   ├── test_responses.c          # C unit tests for HTTP response builders
+│   ├── test_server_metrics.c      # C unit tests for bounded rolling latency windows
+│   ├── test_benchmark_accounting.py # Protocol tests verifying 2xx/5xx classification & accounting
+│   ├── test_keepalive.py          # Integration tests for persistent TCP connections
+│   ├── test_malformed_requests.py # Fuzzing & malformed request rejection tests
+│   └── test_security.py           # Path traversal and HTTP method restriction tests
+│
+├── results/
+│   ├── raw/                       # Raw experimental benchmark datasets (CSV format)
+│   │   ├── experiment_baseline_tuned_comparison.csv  # 20 trials: Baseline (no QLAAC)
+│   │   └── experiment_qlaac_tuned_comparison.csv     # 20 trials: QLAAC Active
+│   ├── plots/                     # High-resolution benchmark comparison charts & architecture
+│   │   ├── fig1_throughput_comparison.png     # Successful 2xx RPS comparison
+│   │   ├── fig2_latency_p99_comparison.png      # Tail latency (p99) comparison
+│   │   ├── fig3_qlaac_admission_tradeoff.png    # Admission rate vs. latency trade-off
+│   │   ├── fig4_system_architecture.png         # Modular system architecture diagram
+│   │   └── fig5_qlaac_state_machine.png         # QLAAC state transition diagram
+│   ├── screenshots/               # Real application visual evidence from live server
+│   │   ├── README.md              # Detailed explanations of test conditions & captures
+│   │   ├── 01_dashboard_overview.png   # Full web dashboard overview & telemetry
+│   │   ├── 02_health_check.png         # GET /health 200 OK & JSON serialization
+│   │   ├── 03_post_echo.png            # POST /api/echo body framing & response
+│   │   ├── 04_live_metrics.png         # Dynamic RPS spike & chart updates under load
+│   │   ├── 05_qlaac_load_test.png      # QLAAC state, dynamic signals & invariants
+│   │   └── 06_test_results.png         # Genuine terminal test output (49/49 passed)
+│   └── test_evidence/             # Test execution summaries
+│       └── test_run_summary.txt   # Verified pass/fail execution log of all test suites
+│
+├── benchmark/                     # Experimental benchmarking harness
+│   ├── run_experiment.py          # Benchmark driver with strict HTTP status-line parsing
+│   ├── verify_benchmark_statistics.py # Independent statistical verification script
+│   └── generate_plots.py          # Visualization script producing publication-ready figures
+│
+└── deliverables/                  # Academic course deliverables
+    ├── claude_report_package.zip  # Validated archive package for faculty report generation
+    ├── report/                    # Final academic technical report
+    │   ├── HTTP11_Web_Server_Project_Report.pdf  # Compiled 13-page PDF report
+    │   ├── HTTP11_Web_Server_Project_Report.md   # Editable source Markdown
+    │   ├── generate_report.py                    # Build generator script
+    │   └── README.md                             # Report verification notes
+    └── presentation/              # Final academic slide deck
+        ├── HTTP11_Web_Server_Project_Presentation.pptx # 18-slide widescreen presentation
+        ├── generate_presentation.py                    # Slide generation script
+        └── README.md                                   # Presentation notes
+```
+
+---
+
+## Testing & Quality Assurance
+
+The codebase features an exhaustive, automated multi-tier test harness covering low-level C components and network protocol behaviors.
+
+### Executing All Tests
+
+```bash
+# 1. Execute C17 unit test suites
 make test
+
+# 2. Execute Python RFC compliance, security, and accounting suites
+python3 -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-### Executing Corrected Benchmarks (v2.0)
+### Verified Test Results (49 / 49 Passing — 100% Pass Rate)
 
-The benchmarking orchestrator (`benchmark/run_experiment.py`) uses strict RFC 9112 HTTP status-line parsing and complete response framing. Success is defined strictly as HTTP 2xx responses; 503 overload responses, 4xx errors, connection failures, timeouts, and framing corruptions are recorded separately.
+```text
+================================================================================
+HTTP/1.1 Web Server - Verification Summary
+================================================================================
+1. C17 Unit Tests (make test):
+   - bin/test_controller        : [PASS] 7/7  (State transitions, hysteresis reset, sustained pressure)
+   - bin/test_parser            : [PASS] 9/9  (RFC 9112 tokens, case-insensitivity, framing, Host validation)
+   - bin/test_queue             : [PASS] 3/3  (FIFO push/pop, 64-capacity boundary, thread-pool shutdown)
+   - bin/test_responses         : [PASS] 2/2  (RFC status phrases, date/server headers)
+   - bin/test_server_metrics    : [PASS] 5/5  (Lifetime counters, 503 isolation, bounded latency window)
+   Subtotal: 26 passed, 0 failed
 
-```bash
-# Execute corrected benchmark against live server
-python3 benchmark/run_experiment.py --url http://127.0.0.1:8080/health --clients 1,4,16,32 --duration 3 --trials 2
+2. Python Protocol & Accounting Tests (python3 -m unittest):
+   - test_benchmark_accounting  : [PASS] 11/11 (Strict 2xx throughput isolation, 503 classified as 5xx)
+   - test_keepalive             : [PASS] 3/3   (Persistent connections, Connection: close semantics)
+   - test_malformed_requests    : [PASS] 5/5   (RFC 9112 syntax violations, random byte fuzzing)
+   - test_security              : [PASS] 4/4   (Path traversal prevention, %2e%2e encoding blocks)
+   Subtotal: 23 passed, 0 failed
 
-# Output is recorded to results/raw/benchmark_results_corrected.csv
+Total Test Execution: 49 / 49 Tests Passed (100% Success Rate, 0 Failures)
+================================================================================
 ```
 
-> **Note on Historical Benchmark Data**: Previous benchmark runs recorded in `results/raw/benchmark_results.csv` and associated files utilized a legacy substring check (`b"200 OK" in resp or b"HTTP/1.1" in resp`) which incorrectly counted 503 Overload responses as successes. Legacy data is preserved for historical auditability but is **preliminary** and **not directly comparable** to results produced by the corrected v2.0 harness.
-
-### Cleaning Build Artifacts
-
-```bash
-make clean
-```
+*Full Execution Log:* [`results/test_evidence/test_run_summary.txt`](results/test_evidence/test_run_summary.txt)
 
 ---
 
-## 16. Engineering Practices
+## Empirical Benchmarking & Results
 
-- **Strict Warning Compliance**: Compiled with `-std=c17 -Wall -Wextra -Wpedantic -Wformat=2 -Wshadow -Wwrite-strings -Wstrict-prototypes` to prevent undefined behaviors.
-- **Descriptor & Memory Invariants**: Explicit ownership tracking guarantees no socket descriptors are leaked on abnormal error paths.
-- **Defensive String & Buffer Operations**: Bounded string operations (`snprintf`, `strncmp`) replace unsafe APIs (`sprintf`, `strcpy`).
-- **No Mock Statistics**: Strict academic policy: zero fabricated performance numbers or mock charts.
+Benchmark trials were conducted using the corrected v2.0 benchmarking harness ([`benchmark/run_experiment.py`](benchmark/run_experiment.py)) enforcing strict RFC 9112 status-line parsing. Throughput is computed strictly from verified **2xx application responses**; HTTP 503 overload shedding responses are isolated into the 5xx category to prevent false throughput inflation.
+
+All metrics are calculated directly from raw datasets ([`results/raw/`](results/raw/)) containing 20 independent trials per configuration (5 trials per concurrency level) using [`benchmark/verify_benchmark_statistics.py`](benchmark/verify_benchmark_statistics.py).
+
+### Performance Comparison Matrix (Baseline vs. QLAAC)
+
+| Concurrency ($C$) | Configuration | Successful 2xx RPS (Mean $\pm$ Std) | $p50$ Latency (ms) | $p95$ Latency (ms) | $p99$ Latency (ms) | 5xx Rejections (Mean $\pm$ Std) | Shedding Rate (%) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **2** | Baseline | $13,929.24 \pm 334.23$ | $0.13 \pm 0.01$ | $0.23 \pm 0.01$ | $0.31 \pm 0.02$ | $0.00 \pm 0.00$ | $0.00\%$ |
+| **2** | QLAAC | $14,665.40 \pm 610.30$ | $0.12 \pm 0.00$ | $0.22 \pm 0.03$ | $0.33 \pm 0.05$ | $0.00 \pm 0.00$ | $0.00\%$ |
+| **8** | Baseline | $6,629.38 \pm 148.21$ | $0.54 \pm 0.01$ | $1.38 \pm 0.04$ | $29.09 \pm 0.50$ | $0.00 \pm 0.00$ | $0.00\%$ |
+| **8** | QLAAC | $2,129.26 \pm 50.35$ | $1.55 \pm 0.02$ | $2.83 \pm 0.03$ | $3.55 \pm 0.06$ | $0.00 \pm 0.00$ | $0.00\%$ |
+| **32** | Baseline | $6,860.38 \pm 107.11$ | $0.52 \pm 0.01$ | $1.34 \pm 0.03$ | $204.00 \pm 2.94$ | $0.00 \pm 0.00$ | $0.00\%$ |
+| **32** | QLAAC | $1,970.40 \pm 55.83$ | $10.46 \pm 0.26$ | $14.31 \pm 0.66$ | $16.55 \pm 1.00$ | $0.00 \pm 0.00$ | $0.00\%$ |
+| **64** | Baseline | $6,828.52 \pm 157.91$ | $0.52 \pm 0.01$ | $1.38 \pm 0.05$ | $440.33 \pm 9.21$ | $0.00 \pm 0.00$ | $0.00\%$ |
+| **64** | QLAAC | $638.12 \pm 126.44$ | $19.61 \pm 6.35$ | $28.76 \pm 0.59$ | $161.18 \pm 159.88$ | $16,475.40 \pm 969.70$ | $72.14\% \pm 5.15\%$ |
+
+### Honest Performance Analysis & Systems Trade-offs
+
+1. **Low Concurrency ($C=2$):** Both configurations achieve peak throughput ($> 13,900\text{ req/s}$) with sub-millisecond tail latency ($p99 \le 0.33\text{ ms}$). The controller remains in `NORMAL` state with zero overhead.
+2. **Moderate Concurrency ($C=8, 32$):** Baseline admits all requests into its FIFO buffer, but queue queuing delay causes tail latency to spike to $29.09\text{ ms}$ at $C=8$ and $204.00\text{ ms}$ at $C=32$. QLAAC enters `CAUTION` state, throttling persistent Keep-Alive connections (`Connection: close`) to drain the queue. This trades volumetric throughput ($1,970\text{ req/s}$ vs. $6,860\text{ req/s}$) to achieve a **12.3x reduction in $p99$ tail latency** ($16.55\text{ ms}$ vs. $204.00\text{ ms}$).
+3. **Extreme Concurrency ($C=64$):** Baseline suffers severe bufferbloat: while completing $6,828\text{ req/s}$, its $p99$ tail latency surges to $440.33\text{ ms}$, exceeding typical distributed service SLAs. QLAAC detects critical worker saturation and queue pressure, transitioning into `OVERLOAD` and shedding $72.14\%$ of excess requests via HTTP 503 (`Retry-After: 5`). This deliberate request-shedding policy caps $p99$ tail latency and ensures admitted requests are processed promptly, preventing cascading timeout collapse.
 
 ---
 
-## 17. References
+## Genuine Visual Evidence & Screenshots
 
-1. **RFC 9112**: Fielding, R., Nottingham, M., & Reschke, J. (2022). *HTTP/1.1*. Internet Engineering Task Force (IETF). [https://www.rfc-editor.org/rfc/rfc9112.html](https://www.rfc-editor.org/rfc/rfc9112.html)
-2. **RFC 9110**: Fielding, R., Nottingham, M., & Reschke, J. (2022). *HTTP Semantics*. Internet Engineering Task Force (IETF). [https://www.rfc-editor.org/rfc/rfc9110.html](https://www.rfc-editor.org/rfc/rfc9110.html)
-3. **Linux Programmer's Manual**:
-   - `socket(2)`: [https://man7.org/linux/man-pages/man2/socket.2.html](https://man7.org/linux/man-pages/man2/socket.2.html)
-   - `bind(2)`: [https://man7.org/linux/man-pages/man2/bind.2.html](https://man7.org/linux/man-pages/man2/bind.2.html)
-   - `listen(2)`: [https://man7.org/linux/man-pages/man2/listen.2.html](https://man7.org/linux/man-pages/man2/listen.2.html)
-   - `accept(2)`: [https://man7.org/linux/man-pages/man2/accept.2.html](https://man7.org/linux/man-pages/man2/accept.2.html)
-   - `recv(2)`: [https://man7.org/linux/man-pages/man2/recv.2.html](https://man7.org/linux/man-pages/man2/recv.2.html)
-   - `send(2)`: [https://man7.org/linux/man-pages/man2/send.2.html](https://man7.org/linux/man-pages/man2/send.2.html)
-   - `sendfile(2)`: [https://man7.org/linux/man-pages/man2/sendfile.2.html](https://man7.org/linux/man-pages/man2/sendfile.2.html)
-   - `pthreads(7)`: [https://man7.org/linux/man-pages/man7/pthreads.7.html](https://man7.org/linux/man-pages/man7/pthreads.7.html)
-4. **wrk**: Glozer, W. (2023). *wrk - Modern HTTP benchmarking tool*. GitHub Repository. [https://github.com/wg/wrk](https://github.com/wg/wrk)
-5. **Wireshark Foundation**: *Wireshark User's Guide*. [https://www.wireshark.org/docs/wsug_html_chunked/](https://www.wireshark.org/docs/wsug_html_chunked/)
+Authentic screenshots captured directly from the running C17 server instance at `http://127.0.0.1:8080/`:
+
+<div align="center">
+  <img src="results/screenshots/01_dashboard_overview.png" alt="Dashboard Overview" width="850">
+  <p><em>Figure 1: Systems Monitoring Dashboard overview displaying server online state, QLAAC status, throughput/latency metrics cards, and real-time Canvas charts with idle line breaks.</em></p>
+</div>
+
+### Complete Screenshot Gallery
+
+1. **[`01_dashboard_overview.png`](results/screenshots/01_dashboard_overview.png)**: Full dashboard overview, metrics grid, active thread pool (`1/4 active`), and real-time Canvas latency/RPS charts.
+2. **[`02_health_check.png`](results/screenshots/02_health_check.png)**: Live Interactive API Console execution of `GET /health` showing `HTTP/1.1 200 OK` (4.50 ms latency) and JSON response.
+3. **[`03_post_echo.png`](results/screenshots/03_post_echo.png)**: Live Interactive API Console execution of `POST /api/echo` demonstrating RFC 9112 Content-Length body framing and exact text payload echo.
+4. **[`04_live_metrics.png`](results/screenshots/04_live_metrics.png)**: Live metrics updating dynamically under a 120-request burst, showing real-time RPS spike (~46 RPS) and active latency chart recovery.
+5. **[`05_qlaac_load_test.png`](results/screenshots/05_qlaac_load_test.png)**: QLAAC controller telemetry grid showing active state (`NORMAL`), dynamic threshold signal meters, and documented transition invariants.
+6. **[`06_test_results.png`](results/screenshots/06_test_results.png)**: Genuine terminal output showing all 49 C and Python unit and protocol tests passing with 100% success rate.
+
+*Detailed Capture Documentation:* [`results/screenshots/README.md`](results/screenshots/README.md)
+
+---
+
+## Academic Deliverables
+
+All course deliverables are tracked in [`deliverables/`](deliverables/):
+
+- **Comprehensive PDF Technical Report:** [`deliverables/report/HTTP11_Web_Server_Project_Report.pdf`](deliverables/report/HTTP11_Web_Server_Project_Report.pdf) (13 pages, 1.92 MB, IEEE/ACM format, 6 embedded figures, 21 structured sections, full empirical tables).
+- **Source Markdown Report:** [`deliverables/report/HTTP11_Web_Server_Project_Report.md`](deliverables/report/HTTP11_Web_Server_Project_Report.md).
+- **Academic Slide Deck:** [`deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx`](deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx) (18 slides, 16:9 widescreen, custom dark palette, embedded benchmark plots, and speaker notes).
+- **Claude Report Package ZIP:** [`deliverables/claude_report_package.zip`](deliverables/claude_report_package.zip) (Self-contained archive for faculty report generation).
+- **Package Orientation Guide:** [`CLAUDE_PACKAGE_README.md`](CLAUDE_PACKAGE_README.md).
+- **Verified Test Execution Summary:** [`results/test_evidence/test_run_summary.txt`](results/test_evidence/test_run_summary.txt).
+- **High-Resolution Figures:**
+  - Throughput Comparison: [`results/plots/fig1_throughput_comparison.png`](results/plots/fig1_throughput_comparison.png)
+  - Tail Latency Comparison: [`results/plots/fig2_latency_p99_comparison.png`](results/plots/fig2_latency_p99_comparison.png)
+  - QLAAC Admission Trade-Off: [`results/plots/fig3_qlaac_admission_tradeoff.png`](results/plots/fig3_qlaac_admission_tradeoff.png)
+  - Architecture Diagram: [`results/plots/fig4_system_architecture.png`](results/plots/fig4_system_architecture.png)
+  - State Machine Diagram: [`results/plots/fig5_qlaac_state_machine.png`](results/plots/fig5_qlaac_state_machine.png)
+
+---
+
+## Engineering Limitations & Future Work
+
+### Current Systemic Limitations
+1. **Synchronous Worker Thread Blocking:** While Linux `sendfile(2)` eliminates user-space buffer copying, disk cache misses still block the servicing worker thread.
+2. **HTTP/1.1 Head-of-Line Blocking:** In accordance with RFC 9112, sequential pipelined requests on a persistent TCP socket must be served in-order; slow backend handlers delay subsequent requests on the same connection.
+3. **Deliberate Scope Boundaries:** Request body chunked transfer decoding is deliberately not implemented (`Transfer-Encoding: chunked` returns `501 Not Implemented`); TLS encryption is handled via upstream reverse proxies rather than in-process OpenSSL.
+4. **Single-Process Model:** The server operates as a single multi-threaded process and does not shard across multiple processes via `SO_REUSEPORT`.
+
+### Planned Future Enhancements
+- **Asynchronous I/O via Linux `io_uring`:** Transitioning from blocking worker threads to kernel-managed submission/completion ring queues for true non-blocking disk and network I/O.
+- **Multi-Process Socket Sharding:** Leveraging `SO_REUSEPORT` to pin listener loops to individual CPU cores across NUMA nodes.
+- **Binary HTTP/2 Multiplexing:** Implementing binary frame streams to eliminate HTTP/1.1 Head-of-Line blocking.
+- **Kernel TLS (kTLS):** Utilizing Linux kernel TLS acceleration for hardware-offloaded cryptographic streaming.
+
+---
+
+## Academic Context & Attribution
+
+This project was developed for the **Computer Networks Laboratory Course (BCSE308P / CS-504)** during the **Fall Semester 2026–27**.
+
+### Project Authors
+- **Yash Pradhan (Registration Number: 24BCE0702)**
+- **Anjini Pandey (Registration Number: 24BCE0714)**
+
+### License
+Released under the [MIT License](LICENSE). Copyright (c) 2026 Yash Pradhan & Anjini Pandey.

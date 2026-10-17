@@ -7,6 +7,15 @@
 >
 > You (Claude) will use these materials to author the final academic Computer Networks course report adhering strictly to the faculty template, which the student will attach separately.
 
+### Project Team
+
+| Registration Number | Student Name |
+| :--- | :--- |
+| 24BCE0702 | Yash Pradhan |
+| 24BCE0714 | Anjini Pandey |
+
+*Course:* Computer Networks Lab (BCSE308P / CS-504) — Fall Semester 2026–27
+
 ---
 
 ### IMPORTANT INSTRUCTIONS FOR CLAUDE
@@ -15,9 +24,10 @@
    - The Computer Networks faculty DOCX report template will be provided directly by the user in the prompt or conversation attachment.
    - Do NOT assume a generic template structure; align headings, sections, styling, and required academic components to the user's uploaded faculty template.
 
-2. **No Hallucinated Student / Environmental Information:**
-   - **Do NOT invent** student names, roll numbers, registration IDs, course codes, instructor names, department names, university names, hardware specifications (CPU model, RAM capacity, OS build, NIC specifications), or tool versions.
-   - Explicitly request any missing details from the student if required by the faculty template.
+2. **Project Team & Institutional Information:**
+   - The authorized project team consists of the two students listed above (**24BCE0702 — Yash Pradhan** and **24BCE0714 — Anjini Pandey**), listed in ascending registration-number order.
+   - **Do NOT invent** other student names, roll numbers, instructor names, or unconfirmed department/university details.
+   - Explicitly request any missing environmental details (such as specific evaluation rubrics or instructor names) from the student if required by the faculty template.
 
 3. **Ground Truth Priority:**
    - **Tier 1 (Authoritative Reality):** Actual C17 source code in `src/` and `include/`, unit tests in `tests/`, raw benchmark CSVs in `results/raw/`, and verified calculations from `benchmark/verify_benchmark_statistics.py`.

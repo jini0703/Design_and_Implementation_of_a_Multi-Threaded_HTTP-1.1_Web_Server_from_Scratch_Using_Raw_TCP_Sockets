@@ -123,17 +123,18 @@ def build_presentation():
     p3.space_after = Pt(28)
 
     p4 = tf.add_paragraph()
-    p4.text = "Author: Systems Engineering Team   |   Course: Computer Networks (CS-504)   |   Date: October 2026"
+    p4.text = "Project Team: 24BCE0702 - Yash Pradhan   |   24BCE0714 - Anjini Pandey"
     p4.font.size = Pt(12)
     p4.font.bold = True
     p4.font.color.rgb = TEXT_WHITE
+    p4.space_after = Pt(6)
 
     p5 = tf.add_paragraph()
-    p5.text = "Platform: Linux Kernel 6.6 / x86_64   |   Standards: RFC 9112, RFC 9110, POSIX.1-2008"
-    p5.font.size = Pt(11)
+    p5.text = "Course: Computer Networks Lab (BCSE308P / CS-504)   |   Date: October 2026   |   Platform: Linux x86_64"
+    p5.font.size = Pt(10.5)
     p5.font.color.rgb = RGBColor(148, 163, 184)
 
-    add_speaker_notes(s1, "Welcome committee members. Today I present the design, low-level implementation, and empirical verification of a multi-threaded HTTP/1.1 web server built strictly from scratch in ISO C17 on raw POSIX sockets without external libraries.")
+    add_speaker_notes(s1, "Welcome committee members and faculty evaluators. Today Yash Pradhan (24BCE0702) and Anjini Pandey (24BCE0714) present the design, low-level systems implementation, and empirical verification of a multi-threaded HTTP/1.1 web server built strictly from scratch in ISO C17 on raw POSIX sockets without external libraries.")
 
     # ==========================================
     # SLIDE 2: Motivation & Problem Statement

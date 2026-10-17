@@ -12,6 +12,10 @@ This directory is the dedicated location for the academic slide deck for the fin
 HTTP11_Web_Server_Project_Presentation.pptx
 ```
 
+### Project Team
+- **24BCE0702 — Yash Pradhan**
+- **24BCE0714 — Anjini Pandey**
+
 ---
 
 ## Status & Deliverable Verification
@@ -21,7 +25,7 @@ HTTP11_Web_Server_Project_Presentation.pptx
 > - **Final Presentation**: [`HTTP11_Web_Server_Project_Presentation.pptx`](HTTP11_Web_Server_Project_Presentation.pptx) (18 slides, 16:9 widescreen, custom dark systems-engineering palette)
 > - **Build Generator**: [`generate_presentation.py`](generate_presentation.py)
 >
-> All 18 slides include structured layout cards, technical bullet points, empirical benchmark comparison charts, live dashboard screenshots, and full oral defense speaker notes. No placeholder slides.
+> All 18 slides include structured layout cards, technical bullet points, empirical benchmark comparison charts, live dashboard screenshots, complete team attribution, and full oral defense speaker notes. No placeholder slides.
 
 ---
 

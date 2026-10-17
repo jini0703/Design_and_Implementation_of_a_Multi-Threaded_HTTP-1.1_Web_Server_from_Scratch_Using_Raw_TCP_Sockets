@@ -12,17 +12,21 @@ This directory is the dedicated location for the comprehensive final academic te
 HTTP11_Web_Server_Project_Report.pdf
 ```
 
+### Project Team
+- **24BCE0702 — Yash Pradhan**
+- **24BCE0714 — Anjini Pandey**
+
 ---
 
 ## Status & Deliverable Verification
 
 > **Verification Status: COMPLETED & VERIFIED**
-> The comprehensive 12-page academic technical report has been compiled and verified in this directory:
-> - **Final PDF Report**: [`HTTP11_Web_Server_Project_Report.pdf`](HTTP11_Web_Server_Project_Report.pdf) (12 pages, 1.85 MB, 6 embedded high-resolution figures)
+> The comprehensive 13-page academic technical report has been compiled and verified in this directory:
+> - **Final PDF Report**: [`HTTP11_Web_Server_Project_Report.pdf`](HTTP11_Web_Server_Project_Report.pdf) (13 pages, 1.92 MB, 6 embedded high-resolution figures)
 > - **Source Markdown**: [`HTTP11_Web_Server_Project_Report.md`](HTTP11_Web_Server_Project_Report.md)
 > - **Build Generator**: [`generate_report.py`](generate_report.py)
 >
-> All 21 IEEE/ACM formatted sections, empirical benchmark data tables from 40 controlled trials, architecture diagrams, and mathematical models are fully integrated. No placeholder content.
+> All 21 IEEE/ACM formatted sections, empirical benchmark data tables from 40 controlled trials, architecture diagrams, and mathematical models are fully integrated with complete team attribution. No placeholder content.
 
 ---
 

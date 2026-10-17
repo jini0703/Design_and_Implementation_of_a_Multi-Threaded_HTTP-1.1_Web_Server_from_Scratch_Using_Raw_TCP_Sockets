@@ -1,0 +1,110 @@
+================================================================================
+HTTP/1.1 Web Server - Automated Verification & Test Run Summary
+================================================================================
+Timestamp: 2026-10-17 16:58:46 UTC+05:30
+Environment: Linux (POSIX C17 / GCC 11+ via WSL2 / Windows 11 Host)
+Target Architecture: Linux / POSIX.1-2008 Standard
+Repository: Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets
+Branch: main
+
+--------------------------------------------------------------------------------
+1. C17 Unit Test Suites (make test)
+--------------------------------------------------------------------------------
+Command: make test
+Compilation Flags: -std=c17 -Wall -Wextra -Wpedantic -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE -pthread
+
+Executed Test Binaries & Verification Results:
+
+1. bin/test_controller (Queue-and-Latency-Aware Admission Control)
+   - [PASS] test_qlaac_worker_saturation_empty_queue
+   - [PASS] test_qlaac_worker_saturation_growing_queue
+   - [PASS] test_qlaac_sustained_high_latency
+   - [PASS] test_qlaac_sustained_pressure
+   - [PASS] test_qlaac_recovery
+   - [PASS] test_qlaac_hysteresis_reset
+   - [PASS] test_qlaac_disabled_policy
+   Summary: 7/7 tests passed. Verified NORMAL -> CAUTION -> OVERLOAD transitions,
+   hysteresis recovery dampening, and sustained pressure rules.
+
+2. bin/test_parser (RFC 9112 HTTP/1.1 Streaming Parser)
+   - [PASS] test_request_init
+   - [PASS] test_header_case_insensitive_lookup
+   - [PASS] test_valid_get_request
+   - [PASS] test_missing_host_header (RFC 9112 Host header validation)
+   - [PASS] test_post_with_body (Content-Length framing)
+   - [PASS] test_conflicting_framing_headers (Content-Length + Transfer-Encoding)
+   - [PASS] test_unsupported_transfer_encoding (chunked 501 handling)
+   - [PASS] test_expect_continue_rejection (RFC 9112 417 Expectation Failed)
+   - [PASS] test_pipelined_leftover_preservation
+   Summary: 9/9 tests passed. Verified zero-copy tokenization, strict RFC compliance.
+
+3. bin/test_queue (Thread-Safe Bounded Circular FIFO Connection Queue)
+   - [PASS] test_queue_push_pop
+   - [PASS] test_queue_capacity_limit (Capacity 64 boundary enforcement)
+   - [PASS] test_queue_shutdown (pthread_cond broadcast and clean termination)
+   Summary: 3/3 tests passed.
+
+4. bin/test_responses (HTTP Response Builders & RFC 9112 Headers)
+   - [PASS] test_status_phrases
+   - [PASS] test_response_init
+   Summary: 2/2 tests passed.
+
+5. bin/test_server_metrics (Server Telemetry & Bounded Window Accounting)
+   - [PASS] test_metrics_initialization
+   - [PASS] test_metrics_normal_request_accounting
+   - [PASS] test_metrics_overload_response_accounting
+   - [PASS] test_metrics_failed_overload_write
+   - [PASS] test_metrics_bounded_latency_window (Rolling latency samples)
+   Summary: 5/5 tests passed.
+
+Total C Unit Tests: 26 passed, 0 failed, 0 skipped (100% pass rate).
+
+--------------------------------------------------------------------------------
+2. Python Integration & Protocol Verification Suites
+--------------------------------------------------------------------------------
+Command: python3 -m unittest discover -s tests -p "test_*.py" -v
+
+Executed Test Cases & Verification Results:
+
+1. test_benchmark_accounting.TestBenchmarkAccounting (11 tests)
+   - test_301_counted_as_3xx: ok
+   - test_400_and_404_counted_as_4xx: ok
+   - test_503_counted_as_5xx_not_2xx: ok
+   - test_connection_closure_before_headers_raises_error: ok
+   - test_distinction_client_vs_server_accounting: ok
+   - test_incomplete_body_framing_error: ok
+   - test_pipelining_preserves_leftover_buffer_without_body_bleeding: ok
+   - test_rps_calculation_strictly_uses_2xx: ok
+   - test_timeout_counted_as_transport_timeout: ok
+   - test_valid_200_success_classification: ok
+   - test_zero_success_reports_na_latency: ok
+
+2. test_keepalive.TestHttpKeepAlive (3 tests)
+   - test_connection_close_header: ok
+   - test_keepalive_specification: ok
+   - test_sequential_requests_over_single_socket: ok
+
+3. test_malformed_requests.TestMalformedRequests (5 tests)
+   - test_chunked_transfer_encoding_501: ok
+   - test_conflicting_content_length_transfer_encoding: ok
+   - test_expect_continue_417: ok
+   - test_missing_host_header_400: ok
+   - test_random_bytes_rejection: ok
+
+4. test_security.TestServerSecurity (4 tests)
+   - test_method_not_allowed_on_static_asset: ok
+   - test_path_traversal_blocked: ok
+   - test_unimplemented_http_method: ok
+   - test_url_encoded_traversal_blocked: ok
+
+Total Python Tests: 23 passed, 0 failed, 0 skipped (100% pass rate).
+
+--------------------------------------------------------------------------------
+3. Comprehensive Verification Summary
+--------------------------------------------------------------------------------
+Total Executed Tests: 49 tests (26 C17 Unit + 23 Python Integration)
+Total Passing: 49 / 49 (100.0%)
+Total Failures: 0
+Total Errors: 0
+Execution Status: ALL TESTS PASSED VERIFIED
+================================================================================

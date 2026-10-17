@@ -90,3 +90,59 @@ The benchmark test grid evaluates the system across five systematic experiments:
 ```
 
 > **Data Integrity Policy**: All charts and performance tables in final academic deliverables must stem directly from verified CSV records in `results/`. No fabricated performance statistics may ever be introduced.
+
+---
+
+## 6. Corrected Benchmark Accounting & HTTP Metrics Specification (v2.0)
+
+In benchmark harness v2.0 (`benchmark/run_experiment.py`), naive substring matching (`if b"200 OK" in resp or b"HTTP/1.1" in resp:`) has been completely replaced with RFC 9112 status-line parsing, rigorous response framing, and separated metric counters.
+
+### 6.1 CSV Metrics Schema
+
+| Metric Column | Type | Mathematical / Logical Definition | Description |
+|:---|:---|:---|:---|
+| `attempted_requests` | uint64 | $\sum \text{requests sent}$ | Total HTTP request payloads written to the client socket. |
+| `completed_http_responses` | uint64 | $\text{success\_2xx} + \text{3xx} + \text{4xx} + \text{5xx}$ | Total fully framed, valid HTTP status lines received. |
+| `success_2xx` | uint64 | Count of status codes $\in [200, 299]$ | Verified application successes (e.g. 200 OK). |
+| `http_3xx` | uint64 | Count of status codes $\in [300, 399]$ | Redirection responses (e.g. 301, 304). |
+| `http_4xx` | uint64 | Count of status codes $\in [400, 499]$ | Client errors (e.g. 400 Bad Request, 404 Not Found, 405). |
+| `http_5xx` | uint64 | Count of status codes $\in [500, 599]$ | Server errors and QLAAC overload shedding (e.g. 503 Service Unavailable). |
+| `transport_errors` | uint64 | Count of TCP RST, broken pipe, connection refused | Transport-layer faults before a valid HTTP response could be received. |
+| `timeouts` | uint64 | Count of connect / read socket timeouts | Socket deadline exceeded without receiving expected bytes. |
+| `invalid_responses` | uint64 | Count of framing errors / truncated bodies | Malformed headers, missing CRLF CRLF, or premature EOF mid-body. |
+| `successful_rps` | float | $\frac{\text{success\_2xx}}{\text{duration\_sec}}$ | Strict throughput of verified successful application transactions. |
+| `avg_latency_ms` | float / str | $\frac{1}{N} \sum_{i=1}^N \text{latency}_i$ | Arithmetic mean response latency for verified 2xx transactions (`N/A` if zero 2xx responses). |
+| `p50_latency_ms` | float / str | 50th percentile of $\text{latencies}_{2xx}$ | Median response duration for 2xx transactions (`N/A` if zero 2xx responses). |
+| `p95_latency_ms` | float / str | 95th percentile of $\text{latencies}_{2xx}$ | Tail latency indicating 95% of 2xx requests completed within this time (`N/A` if zero 2xx responses). |
+| `p99_latency_ms` | float / str | 99th percentile of $\text{latencies}_{2xx}$ | Severe tail latency indicating 99% of 2xx requests completed within this time (`N/A` if zero 2xx responses). |
+
+### 6.2 Stream Framing & Persistent Connection Integrity
+TCP is a byte-stream protocol where packets may fragment or coalesce. The benchmark client `read_http_response` enforces:
+1. **Header Draining**: Accumulates socket chunks until the delimiter `\r\n\r\n` is encountered.
+2. **Status-Line Extraction**: Extracts the exact HTTP numeric status code (`int(status_parts[1])`).
+3. **Framing & Content-Length Draining**: Drains exactly `Content-Length` bytes from the socket.
+4. **Leftover Buffer Preservation**: Any trailing bytes received past the current response body are retained in `remaining_buf` and passed to subsequent requests on the persistent connection, preventing body bleeding across consecutive transactions.
+5. **Connection: close Handling**: If `Connection: close` is present or status code dictates closure, the persistent loop terminates and cleanly closes the socket.
+
+### 6.3 Server-Side Overload Accounting Invariants
+In `src/server.c` and `src/metrics.c`:
+- **Connection Rejection vs. Request Completion**: A rejected TCP connection does not equal an application request. If the server sheds load under QLAAC or bounded queue overflow:
+  - If the HTTP 503 response is successfully transmitted over the raw TCP socket, `status_5xx_count`, `total_overload_503_sent`, and `bytes_sent` are incremented.
+  - Crucially, `total_requests_completed` is **not** incremented, maintaining strict separation between fully processed application requests and transport-level overload shedding.
+  - If socket transmission fails (e.g. client disconnected), only `total_connections_rejected` increments; the server does not report a successful 503 transmission.
+
+---
+
+## 7. Limitations of Historical Benchmark Data
+
+Prior to repository correction (benchmark harness v2.0):
+1. **False Success Accounting**: Legacy benchmark scripts evaluated responses via:
+   ```python
+   if b"200 OK" in resp or b"HTTP/1.1" in resp:
+   ```
+   Because HTTP 503 responses begin with `HTTP/1.1 503 Service Unavailable`, overload shedding responses were incorrectly recorded as successful responses. This artificially inflated successful RPS metrics under heavy load.
+2. **Framing & Buffer Bleeding**: The legacy benchmark assumed a single `recv()` call contained exactly one response. On persistent connections, response bodies could bleed into subsequent requests, leading to unhandled exceptions.
+3. **Historical Data Status**:
+   - Files recorded under the legacy logic (such as `results/raw/benchmark_results.csv`, `fixed_policy_8080.csv`, `fixed_policy_high_load.csv`, `qlaac_enabled_8081.csv`, and `qlaac_enabled_high_load.csv`) are preserved for auditability but must be treated strictly as **preliminary data**.
+   - These legacy files are **not directly comparable** to corrected results generated under the v2.0 schema.
+   - All comparative evaluations, charts, and final project deliverables must strictly use datasets collected via the corrected harness (written by default to `results/raw/benchmark_results_corrected.csv` or explicitly specified new target files).

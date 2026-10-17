@@ -7,21 +7,18 @@
  *
  * Project: Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server
  *          from Scratch Using Raw TCP Sockets
- *
- * Module Responsibilities:
- *  - Encapsulate server configuration and runtime context.
- *  - Orchestrate initialization of network listener, thread pool, connection queue,
- *    metrics collector, and adaptive controller.
- *  - Execute the master connection accept loop.
- *  - Handle OS signals (SIGINT, SIGTERM) to initiate clean, graceful shutdown.
- *  - Reclaim all allocated memory, socket descriptors, and synchronization primitives.
  */
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include "tcp_socket.h"
+#include "connection_queue.h"
+#include "thread_pool.h"
+#include "metrics.h"
+#include "adaptive_controller.h"
 
-#define SERVER_VERSION_STRING "HTTP-Server-Skeleton/0.1.0"
+#define SERVER_VERSION_STRING "HTTP-Server-C17/1.0.0"
 #define DEFAULT_CONFIG_FILE   "config/server.conf.example"
 
 /**
@@ -44,18 +41,33 @@ typedef struct {
     char default_index[64];
     bool enable_sendfile;
     bool adaptive_control_enabled;
+    int sampling_window_ms;
+    size_t recovery_sample_count;
+    size_t sustained_pressure_threshold;
     double latency_caution_ms;
     double latency_overload_ms;
     double queue_caution_threshold;
     double queue_overload_threshold;
+    double worker_caution_threshold;
+    double worker_overload_threshold;
     bool metrics_enabled;
     char metrics_route[64];
 } ServerConfig;
 
 /**
- * @brief Opaque server runtime context structure.
+ * @brief Primary server runtime context encapsulating all subsystems.
  */
-typedef struct ServerContext ServerContext;
+struct ServerContext {
+    ServerConfig config;
+    int listen_fd;
+    ConnectionQueue queue;
+    ThreadPool thread_pool;
+    MetricsCollector metrics;
+    QlaacController controller;
+    volatile bool is_running;
+    pthread_t sampler_thread;
+    bool sampler_thread_started;
+};
 
 /**
  * @brief Populate server configuration with safe default values.

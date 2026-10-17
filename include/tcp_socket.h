@@ -3,90 +3,111 @@
 
 /**
  * @file tcp_socket.h
- * @brief POSIX TCP socket initialization, option configuration, and I/O primitives.
+ * @brief Raw POSIX TCP primitives: listener setup, accept, deadline-bounded I/O, close.
  *
  * Project: Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server
  *          from Scratch Using Raw TCP Sockets
  *
- * Module Responsibilities:
- *  - Initialize listening TCP stream sockets using raw POSIX socket APIs.
- *  - Configure essential socket options (SO_REUSEADDR, SO_RCVTIMEO, SO_SNDTIMEO, TCP_NODELAY).
- *  - Perform host address resolution, bind(2), and listen(2) with defined backlog.
- *  - Accept incoming connections with client IP/port metadata extraction.
- *  - Provide robust, bounded read and write utilities accounting for TCP stream fragmentation,
- *    EAGAIN/EWOULDBLOCK, partial reads, and partial writes.
- *  - Provide safe, centralized socket closure and descriptor invalidation.
+ * This module knows nothing about HTTP. It provides:
+ *  - tcp_listen_create(): socket() + SO_REUSEADDR + bind() + listen(), non-blocking.
+ *  - tcp_accept_client(): accept() with errno classification; accepted sockets are
+ *    made non-blocking, close-on-exec, and TCP_NODELAY.
+ *  - tcp_recv_some()/tcp_send_all()/tcp_sendv_all()/tcp_sendfile_all(): I/O loops that
+ *    tolerate EINTR, EAGAIN, partial reads, and partial writes, and that never wait
+ *    past an absolute CLOCK_MONOTONIC deadline (implemented with poll()).
+ *
+ * SIGPIPE: sends use MSG_NOSIGNAL where the platform defines it (Linux). The server also
+ * ignores SIGPIPE process-wide, which is the portable fallback for other systems.
  */
 
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <sys/types.h>
+#include <sys/uio.h>
+
+/* Negative return codes shared by the I/O helpers. */
+#define TCP_ERR_IO       (-1) /**< Unrecoverable socket error (reset, EPIPE, ...). */
+#define TCP_ERR_TIMEOUT  (-2) /**< The absolute deadline expired. */
+#define TCP_ERR_STOPPED  (-3) /**< The optional stop flag was raised while waiting. */
+
+/** Granularity at which waits re-check an optional stop flag. */
+#define TCP_STOP_POLL_SLICE_MS 100
+
+#define TCP_IP_STRLEN 64
 
 /**
- * @brief Representation of an accepted client connection.
+ * @brief An accepted client connection. Exactly one component owns `fd` at any time
+ *        (acceptor -> queue -> worker); see docs/architecture.md, "Socket ownership".
  */
 typedef struct {
-    int client_fd;
-    char client_ip[64];
-    uint16_t client_port;
+    int fd;
+    char ip[TCP_IP_STRLEN];
+    uint16_t port;
+    bool is_loopback;      /**< Peer address is 127.0.0.0/8, ::1, or ::ffff:127.0.0.0/104. */
+    uint64_t accepted_ns;  /**< monotonic_ns() timestamp taken right after accept(). */
 } ClientConnection;
 
-/**
- * @brief Create, bind, and configure a passive listening TCP server socket.
- * @param host IP address string (e.g. "0.0.0.0" or "127.0.0.1").
- * @param port TCP port number.
- * @param backlog Maximum length to which the queue of pending connections may grow.
- * @return Listening socket file descriptor, or negative integer on failure.
- */
-int tcp_listen_create(const char *host, uint16_t port, int backlog);
+typedef enum {
+    TCP_ACCEPT_OK = 0,
+    TCP_ACCEPT_AGAIN,     /**< No pending connection (EAGAIN/EWOULDBLOCK). */
+    TCP_ACCEPT_RETRY,     /**< Transient per-connection failure (EINTR, ECONNABORTED, ...). */
+    TCP_ACCEPT_RESOURCE,  /**< Descriptor/memory exhaustion (EMFILE, ENFILE, ENOBUFS, ENOMEM). */
+    TCP_ACCEPT_FATAL      /**< Unexpected error on the listening socket. */
+} TcpAcceptResult;
 
 /**
- * @brief Configure send/receive timeouts on a socket descriptor.
- * @param socket_fd Target socket file descriptor.
- * @param timeout_sec Timeout duration in seconds.
- * @return 0 on success, -1 on failure.
+ * Create a non-blocking listening socket bound to host:port.
+ * @param host Numeric IPv4/IPv6 address (e.g. "127.0.0.1", "0.0.0.0", "::1").
+ * @param err  Receives a descriptive message on failure (may be NULL).
+ * @return Listening descriptor (>= 0) or -1 on failure.
  */
-int tcp_set_timeouts(int socket_fd, int timeout_sec);
+int tcp_listen_create(const char *host, uint16_t port, int backlog, char *err, size_t errlen);
+
+/** Accept one pending connection. On TCP_ACCEPT_OK, the caller owns out->fd. */
+TcpAcceptResult tcp_accept_client(int listen_fd, ClientConnection *out, int *errno_out);
+
+int tcp_set_nonblocking(int fd);
+int tcp_set_cloexec(int fd);
+int tcp_set_nodelay(int fd);
 
 /**
- * @brief Enable or disable TCP_NODELAY (Nagle's algorithm) on a socket descriptor.
- * @param socket_fd Target socket file descriptor.
- * @param enable True to disable Nagle (low latency), False to retain default buffering.
- * @return 0 on success, -1 on failure.
+ * Receive up to cap bytes, waiting no later than deadline_ns.
+ * @param stop Optional flag; when it becomes true while waiting, returns TCP_ERR_STOPPED.
+ * @return >0 bytes received, 0 on orderly EOF, or a negative TCP_ERR_* code.
  */
-int tcp_set_nodelay(int socket_fd, bool enable);
+ssize_t tcp_recv_some(int fd, char *buf, size_t cap, uint64_t deadline_ns, const atomic_bool *stop);
+
+/** Send all bytes (looping over partial writes). @return 0 or a negative TCP_ERR_* code. */
+int tcp_send_all(int fd, const void *buf, size_t len, uint64_t deadline_ns, size_t *sent_out);
+
+/** Gather-send up to 4 buffers completely. @return 0 or a negative TCP_ERR_* code. */
+int tcp_sendv_all(int fd, const struct iovec *iov, int iovcnt, uint64_t deadline_ns, size_t *sent_out);
 
 /**
- * @brief Accept an incoming client connection from a listening socket.
- * @param listen_fd Server listening socket file descriptor.
- * @param conn Pointer to ClientConnection struct to receive descriptor and address info.
- * @return 0 on successful accept, negative error code on failure.
+ * Transmit `count` bytes of an open regular file starting at its offset 0.
+ * Uses Linux sendfile(2) when use_sendfile is true and supported, otherwise a bounded
+ * read()/send() loop. A file that shrinks during transfer yields TCP_ERR_IO, because the
+ * already-sent Content-Length can no longer be honoured and the connection must close.
  */
-int tcp_accept_client(int listen_fd, ClientConnection *conn);
+int tcp_sendfile_all(int sock_fd, int file_fd, size_t count, uint64_t deadline_ns,
+                     bool use_sendfile, size_t *sent_out);
+
+/** Single non-blocking send attempt; result ignored (used for best-effort 503 rejections). */
+void tcp_send_best_effort(int fd, const void *buf, size_t len);
+
+/** Read and discard whatever is immediately available (bounded), without waiting. */
+void tcp_discard_available(int fd, size_t max_bytes);
+
+/** close() the descriptor if valid and set it to -1 (prevents double close). */
+void tcp_close(int *fd);
 
 /**
- * @brief Read bytes from a socket into a buffer, handling partial TCP reads and timeouts.
- * @param socket_fd Client socket descriptor.
- * @param buffer Destination buffer.
- * @param max_len Maximum bytes to read into buffer.
- * @return Number of bytes read (>0), 0 on orderly client disconnect (EOF), or -1 on error.
+ * Half-close the write side, briefly drain unread input, then close. Used after error
+ * responses so that unread request bytes do not trigger a TCP RST that could destroy the
+ * response before the client reads it.
  */
-ssize_t tcp_read_stream(int socket_fd, char *buffer, size_t max_len);
-
-/**
- * @brief Write all bytes in a buffer to a socket, looping to handle partial TCP writes.
- * @param socket_fd Client socket descriptor.
- * @param buffer Data to transmit.
- * @param length Total length of data to write.
- * @return Number of bytes successfully sent, or -1 on unrecoverable transmission error.
- */
-ssize_t tcp_write_all(int socket_fd, const char *buffer, size_t length);
-
-/**
- * @brief Safely close a socket descriptor and set descriptor handle to -1.
- * @param socket_fd Pointer to socket file descriptor.
- */
-void tcp_close_socket(int *socket_fd);
+void tcp_lingering_close(int *fd, int linger_ms);
 
 #endif /* TCP_SOCKET_H */

@@ -3,20 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTTP/1.1 Web Server - Systems Monitoring Dashboard</title>
-  <meta name="description" content="Status and telemetry dashboard for custom multi-threaded HTTP/1.1 web server in C17.">
+  <title>HTTP/1.1 Web Server - Systems Monitoring &amp; QLAAC Dashboard</title>
+  <meta name="description" content="Production-grade real-time systems monitoring dashboard for custom C17 multi-threaded HTTP/1.1 web server using raw POSIX TCP sockets, pthreads, and QLAAC adaptive admission control.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.7);
-      --card-border: rgba(148, 163, 184, 0.15);
-      --text: #f8fafc;
+      --bg-base: #0a0e17;
+      --bg-surface: #111827;
+      --bg-card: rgba(17, 24, 39, 0.75);
+      --bg-card-hover: rgba(30, 41, 59, 0.85);
+      --card-border: rgba(148, 163, 184, 0.12);
+      --card-border-hover: rgba(56, 189, 248, 0.35);
+
+      --text-main: #f8fafc;
       --text-muted: #94a3b8;
+      --text-dim: #64748b;
+
       --accent: #38bdf8;
-      --accent-glow: rgba(56, 189, 248, 0.25);
-      --success: #34d399;
-      --warning: #fbbf24;
-      --danger: #f87171;
+      --accent-glow: rgba(56, 189, 248, 0.2);
+      --accent-dim: rgba(56, 189, 248, 0.1);
+
+      --state-normal: #10b981;
+      --state-normal-glow: rgba(16, 185, 129, 0.2);
+      --state-caution: #f59e0b;
+      --state-caution-glow: rgba(245, 158, 11, 0.2);
+      --state-overload: #ef4444;
+      --state-overload-glow: rgba(239, 68, 68, 0.25);
+
+      --indigo: #6366f1;
+      --purple: #a855f7;
     }
 
     * {
@@ -26,55 +43,102 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-main);
       min-height: 100vh;
-      padding: 2rem 1rem;
+      padding: 1.5rem 1rem 3rem;
       background-image:
-        radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(129, 140, 248, 0.08) 0%, transparent 40%);
+        radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.07) 0%, transparent 45%),
+        radial-gradient(circle at 90% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 45%);
+      background-attachment: fixed;
+      line-height: 1.5;
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1240px;
       margin: 0 auto;
     }
 
+    /* Header styling */
     header {
-      margin-bottom: 2.5rem;
+      margin-bottom: 2rem;
       border-bottom: 1px solid var(--card-border);
       padding-bottom: 1.5rem;
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       flex-wrap: wrap;
-      gap: 1rem;
+      gap: 1.25rem;
     }
 
-    h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
+    .header-main h1 {
+      font-size: 1.65rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.35rem;
     }
 
-    .subtitle {
+    .header-main .subtitle {
       color: var(--text-muted);
-      font-size: 0.95rem;
-      margin-top: 0.25rem;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .tech-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.15rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--accent);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
 
     .status-badge {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.4rem 0.9rem;
+      padding: 0.45rem 1rem;
       border-radius: 9999px;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
-      background: rgba(52, 211, 153, 0.15);
-      color: var(--success);
-      border: 1px solid rgba(52, 211, 153, 0.3);
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--state-normal);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      box-shadow: 0 0 16px var(--state-normal-glow);
+      transition: all 0.3s ease;
+    }
+
+    .status-badge.offline {
+      background: rgba(239, 68, 68, 0.12);
+      color: var(--state-overload);
+      border-color: rgba(239, 68, 68, 0.3);
+      box-shadow: 0 0 16px var(--state-overload-glow);
+    }
+
+    .status-badge.reconnecting {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--state-caution);
+      border-color: rgba(245, 158, 11, 0.3);
+      box-shadow: 0 0 16px var(--state-caution-glow);
     }
 
     .status-dot {
@@ -83,210 +147,1303 @@
       border-radius: 50%;
       background: currentColor;
       box-shadow: 0 0 8px currentColor;
+      animation: pulse 2s infinite;
     }
 
-    .grid {
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.9); }
+    }
+
+    .mode-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .mode-badge.disabled {
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--text-muted);
+      border-color: rgba(148, 163, 184, 0.2);
+    }
+
+    .refresh-info {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Metric Cards Grid */
+    .grid-metrics {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1.25rem;
-      margin-bottom: 2rem;
+      gap: 1rem;
+      margin-bottom: 1.75rem;
     }
 
     .card {
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 1.5rem;
-      transition: transform 0.2s ease, border-color 0.2s ease;
+      padding: 1.25rem 1.4rem;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      overflow: hidden;
     }
 
     .card:hover {
       transform: translateY(-2px);
-      border-color: rgba(148, 163, 184, 0.3);
+      border-color: var(--card-border-hover);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
     }
 
     .card-label {
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.5rem;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .card-value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--text);
+      font-size: 1.95rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-main);
+      letter-spacing: -0.03em;
+      margin-bottom: 0.35rem;
+      line-height: 1.15;
+    }
+
+    .card-value-sm {
+      font-size: 1.4rem;
     }
 
     .card-desc {
       font-size: 0.8rem;
       color: var(--text-muted);
-      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
     }
 
-    .banner {
-      background: rgba(30, 41, 59, 0.9);
+    .card-desc strong {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* Visual meter bar inside cards */
+    .meter-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      overflow: hidden;
+      margin: 0.6rem 0 0.4rem;
+    }
+
+    .meter-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.4s ease, background-color 0.4s ease;
+      width: 0%;
+      background: var(--accent);
+    }
+
+    .meter-fill.normal { background: var(--state-normal); }
+    .meter-fill.caution { background: var(--state-caution); }
+    .meter-fill.overload { background: var(--state-overload); }
+
+    /* QLAAC Dedicated Section */
+    .section-qlaac {
+      background: linear-gradient(145deg, rgba(17, 24, 39, 0.9), rgba(15, 23, 42, 0.8));
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 1.75rem;
+      position: relative;
+    }
+
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      margin-bottom: 1.25rem;
+      max-width: 900px;
+    }
+
+    .qlaac-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      align-items: stretch;
+    }
+
+    .qlaac-state-box {
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 10px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.3s ease;
+    }
+
+    .qlaac-badge-large {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 1.1rem;
+      border-radius: 8px;
+      font-size: 1.25rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.05em;
+      width: fit-content;
+      margin-bottom: 0.75rem;
+      transition: all 0.3s ease;
+    }
+
+    .qlaac-badge-large.NORMAL {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--state-normal);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      box-shadow: 0 0 20px var(--state-normal-glow);
+    }
+
+    .qlaac-badge-large.CAUTION {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--state-caution);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      box-shadow: 0 0 20px var(--state-caution-glow);
+    }
+
+    .qlaac-badge-large.OVERLOAD {
+      background: rgba(239, 68, 68, 0.18);
+      color: var(--state-overload);
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      box-shadow: 0 0 24px var(--state-overload-glow);
+    }
+
+    .qlaac-state-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .qlaac-stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .qlaac-stat-row:last-child {
+      border-bottom: none;
+    }
+
+    .qlaac-stat-row .label {
+      color: var(--text-muted);
+    }
+
+    .qlaac-stat-row .val {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    /* Charts Row */
+    .grid-charts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+
+    @media (max-width: 640px) {
+      .grid-charts {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-card {
+      background: var(--bg-card);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
+      padding: 1.25rem 1.4rem;
     }
 
-    .banner h2 {
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.85rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .chart-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .chart-legend {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .legend-color {
+      width: 10px;
+      height: 3px;
+      border-radius: 2px;
+    }
+
+    .idle-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+      background: rgba(148, 163, 184, 0.1);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      padding: 2px 7px;
+      border-radius: 9999px;
+      letter-spacing: 0.02em;
+    }
+
+    .idle-indicator::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .canvas-container {
+      width: 100%;
+      height: 180px;
+      position: relative;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* HTTP Response Breakdown Grid */
+    .section-responses {
+      background: var(--bg-card);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.4rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .status-codes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .status-code-pill {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .status-code-pill .code-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .status-code-pill.code-2xx .code-name { color: var(--state-normal); }
+    .status-code-pill.code-3xx .code-name { color: var(--accent); }
+    .status-code-pill.code-4xx .code-name { color: var(--state-caution); }
+    .status-code-pill.code-5xx .code-name { color: var(--state-overload); }
+
+    .status-code-pill .code-count {
+      font-family: 'JetBrains Mono', monospace;
       font-size: 1.2rem;
-      margin-bottom: 0.75rem;
+      font-weight: 700;
+    }
+
+    .distribution-bar {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 9999px;
+      overflow: hidden;
+      display: flex;
+      margin-bottom: 0.5rem;
+    }
+
+    .dist-segment {
+      height: 100%;
+      transition: width 0.4s ease;
+    }
+
+    .dist-2xx { background: var(--state-normal); }
+    .dist-3xx { background: var(--accent); }
+    .dist-4xx { background: var(--state-caution); }
+    .dist-5xx { background: var(--state-overload); }
+
+    .tradeoff-note {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      line-height: 1.45;
+      margin-top: 0.6rem;
+      border-left: 3px solid var(--state-caution);
+      padding-left: 0.75rem;
+    }
+
+    /* Live Interactive Console Section */
+    .section-console {
+      background: var(--bg-surface);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.4rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .console-controls {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 0.55rem 1.1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--accent);
       color: var(--accent);
     }
 
-    .banner p {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      line-height: 1.5;
-      margin-bottom: 0.5rem;
+    .btn-primary {
+      background: var(--accent);
+      color: #0b1120;
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+
+    .btn-primary:hover {
+      background: #7dd3fc;
+      color: #0b1120;
+    }
+
+    .console-output {
+      background: #06090e;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #a5f3fc;
+      min-height: 110px;
+      max-height: 220px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Specs Reference Table */
+    .section-specs {
+      background: var(--bg-card);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.4rem;
+      margin-bottom: 2rem;
     }
 
     .spec-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 1rem;
-      font-size: 0.9rem;
+      font-size: 0.86rem;
     }
 
     .spec-table th, .spec-table td {
-      padding: 0.6rem 0.8rem;
+      padding: 0.65rem 0.85rem;
       text-align: left;
-      border-bottom: 1px solid var(--card-border);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .spec-table th {
-      color: var(--text-muted);
+      color: var(--text-dim);
       font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .spec-table td:first-child {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .spec-table td:nth-child(2) {
+      font-family: 'JetBrains Mono', monospace;
+      color: #cbd5e1;
+    }
+
+    .spec-table td:nth-child(3) {
+      color: var(--text-muted);
     }
 
     footer {
       text-align: center;
-      color: var(--text-muted);
-      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-size: 0.82rem;
       padding-top: 2rem;
       border-top: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Top Header & Status Bar -->
     <header>
-      <div>
+      <div class="header-main">
         <h1>Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server</h1>
-        <p class="subtitle">Built from scratch in C17 using raw POSIX TCP sockets &amp; pthreads</p>
+        <div class="subtitle">
+          <span>From-scratch C17 systems implementation using raw POSIX TCP sockets &amp; pthreads</span>
+          <span class="tech-pill">RFC 9112</span>
+          <span class="tech-pill">sendfile(2)</span>
+          <span class="tech-pill">FIFO Queue</span>
+        </div>
       </div>
-      <div id="server-status" class="status-badge">
-        <span class="status-dot"></span>
-        <span id="status-text">Scaffold Initialized</span>
+      <div class="header-badges">
+        <div id="qlaac-mode-badge" class="mode-badge">
+          <span>QLAAC: Checking...</span>
+        </div>
+        <div id="server-status" class="status-badge">
+          <span class="status-dot"></span>
+          <span id="status-text">Connecting to server...</span>
+        </div>
+        <div class="refresh-info">
+          <span>Last Poll:</span>
+          <span id="last-refresh-time">--:--:--</span>
+        </div>
       </div>
     </header>
 
-    <div class="banner">
-      <h2>Project Architecture &amp; Telemetry Interface</h2>
-      <p>
-        This interface serves as both the static resource root and the dynamic telemetry visualization portal.
-        During runtime, telemetry metrics are polled periodically from the <code>/metrics</code> endpoint to display
-        concurrency metrics, queue pressure, and adaptive admission control states.
+    <!-- Key Metrics Grid -->
+    <div class="grid-metrics">
+      <!-- 1. Throughput -->
+      <div class="card" id="card-throughput">
+        <div class="card-label">
+          <span>Throughput (RPS)</span>
+          <span class="tech-pill">Recent Window</span>
+        </div>
+        <div class="card-value" id="val-rps">0.00</div>
+        <div class="card-desc">
+          <span>Lifetime: <strong id="val-lifetime-rps">0.00</strong> req/s &bull; Total: <strong id="val-requests">0</strong></span>
+        </div>
+      </div>
+
+      <!-- 2. Latency Percentiles -->
+      <div class="card" id="card-latency">
+        <div class="card-label">
+          <span>Response Latency</span>
+          <span class="tech-pill">2xx Percentiles</span>
+        </div>
+        <div class="card-value" id="val-p95">0.00 <span style="font-size: 1rem; color: var(--text-muted);">ms (p95)</span></div>
+        <div class="card-desc">
+          <span>p50: <strong id="val-p50">0.00 ms</strong> &bull; p99: <strong id="val-p99">0.00 ms</strong> &bull; avg: <strong id="val-avg-lat">0.00 ms</strong></span>
+        </div>
+      </div>
+
+      <!-- 3. Worker Threads -->
+      <div class="card" id="card-workers">
+        <div class="card-label">
+          <span>Worker Thread Pool</span>
+          <span id="val-worker-ratio">0 / 4 active</span>
+        </div>
+        <div class="card-value" id="val-workers">0 <span style="font-size: 1rem; color: var(--text-muted);">active</span></div>
+        <div class="meter-bar">
+          <div id="meter-workers" class="meter-fill normal"></div>
+        </div>
+        <div class="card-desc">
+          <span>Pool size: <strong id="val-total-workers">4</strong> threads (POSIX pthreads)</span>
+        </div>
+      </div>
+
+      <!-- 4. Queue Depth -->
+      <div class="card" id="card-queue">
+        <div class="card-label">
+          <span>Bounded Queue Depth</span>
+          <span id="val-queue-ratio">0 / 64</span>
+        </div>
+        <div class="card-value" id="val-queue">0 <span style="font-size: 1rem; color: var(--text-muted);">queued</span></div>
+        <div class="meter-bar">
+          <div id="meter-queue" class="meter-fill normal"></div>
+        </div>
+        <div class="card-desc">
+          <span>Buffer capacity: <strong id="val-queue-cap">64</strong> connections</span>
+        </div>
+      </div>
+
+      <!-- 5. Connections -->
+      <div class="card" id="card-connections">
+        <div class="card-label">
+          <span>Connection Counters</span>
+          <span class="tech-pill">Raw Sockets</span>
+        </div>
+        <div class="card-value" id="val-conns-accepted">0 <span style="font-size: 1rem; color: var(--text-muted);">accepted</span></div>
+        <div class="card-desc">
+          <span>Rejected: <strong id="val-conns-rejected">0</strong> &bull; 503 Shed: <strong id="val-overload-503">0</strong></span>
+        </div>
+      </div>
+
+      <!-- 6. Uptime & Data Volume -->
+      <div class="card" id="card-uptime">
+        <div class="card-label">
+          <span>Server Uptime &amp; I/O</span>
+          <span class="tech-pill">Telemetry</span>
+        </div>
+        <div class="card-value card-value-sm" id="val-uptime">0s</div>
+        <div class="card-desc">
+          <span>Rx: <strong id="val-bytes-rx">0 B</strong> &bull; Tx: <strong id="val-bytes-tx">0 B</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Charts Grid -->
+    <div class="grid-charts">
+      <!-- Live Throughput History -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Real-Time Throughput History (RPS)</div>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--accent);"></div>
+              <span>Recent RPS (Rolling Window)</span>
+            </div>
+          </div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="chart-throughput"></canvas>
+        </div>
+      </div>
+
+      <!-- Live Latency History -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <span>Response Latency Profile History (ms)</span>
+            <span id="latency-idle-indicator" class="idle-indicator" style="display: none;">Idle &mdash; no recent samples</span>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--state-normal);"></div>
+              <span>p50</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--state-caution);"></div>
+              <span>p95</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--purple);"></div>
+              <span>p99</span>
+            </div>
+          </div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="chart-latency"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- QLAAC Dedicated Visualisation & State Machine -->
+    <div class="section-qlaac">
+      <div class="section-title">
+        <span>Queue-and-Latency-Aware Admission Control (QLAAC)</span>
+      </div>
+      <p class="section-desc">
+        Experimental closed-loop controller monitoring worker utilization, connection queue occupancy, and rolling p95 latency.
+        Transitions smoothly across three states to bound tail latency and safeguard against server collapse.
       </p>
+
+      <div class="qlaac-grid">
+        <!-- Active State Card -->
+        <div class="qlaac-state-box">
+          <div>
+            <div class="card-label">Current Controller State</div>
+            <div id="qlaac-badge-state" class="qlaac-badge-large NORMAL">NORMAL</div>
+            <p id="qlaac-state-explanation" class="qlaac-state-desc">
+              All incoming requests and connections are admitted normally. Persistent HTTP/1.1 connections remain active.
+            </p>
+          </div>
+          <div style="margin-top: 1rem;">
+            <div class="qlaac-stat-row">
+              <span class="label">Overload Transitions:</span>
+              <span class="val" id="val-qlaac-trans">0</span>
+            </div>
+            <div class="qlaac-stat-row">
+              <span class="label">Total Overload Shedding (503s):</span>
+              <span class="val" id="val-qlaac-shed">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telemetry Signals Monitored -->
+        <div class="qlaac-state-box">
+          <div class="card-label">Dynamic Threshold Signals</div>
+          <div style="margin-top: 0.5rem;">
+            <div class="qlaac-stat-row">
+              <span class="label">Worker Saturation (Active/Total):</span>
+              <span class="val" id="val-signal-workers">0.0%</span>
+            </div>
+            <div class="meter-bar">
+              <div id="meter-signal-workers" class="meter-fill normal"></div>
+            </div>
+
+            <div class="qlaac-stat-row" style="margin-top: 0.5rem;">
+              <span class="label">Queue Occupancy (Depth/Cap):</span>
+              <span class="val" id="val-signal-queue">0.0%</span>
+            </div>
+            <div class="meter-bar">
+              <div id="meter-signal-queue" class="meter-fill normal"></div>
+            </div>
+
+            <div class="qlaac-stat-row" style="margin-top: 0.5rem;">
+              <span class="label">Recent p95 Tail Latency:</span>
+              <span class="val" id="val-signal-lat">0.00 ms</span>
+            </div>
+            <div class="meter-bar">
+              <div id="meter-signal-lat" class="meter-fill normal"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- State Behavior Reference -->
+        <div class="qlaac-state-box">
+          <div class="card-label">State Machine Invariants</div>
+          <div style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+            <div>
+              <strong style="color: var(--state-normal);">NORMAL:</strong> Worker &lt; 85%, Queue &lt; 70%, p95 &lt; 50 ms.
+            </div>
+            <div>
+              <strong style="color: var(--state-caution);">CAUTION:</strong> Worker &ge; 85% or Queue &ge; 70%. Throttles keep-alive (<code>Connection: close</code>) to bound tail latency. Requests admitted.
+            </div>
+            <div>
+              <strong style="color: var(--state-overload);">OVERLOAD:</strong> Queue &ge; 90%, p95 &ge; 150 ms, or saturated workers + queue &ge; 70%. Immediate HTTP 503 shedding with <code>Retry-After: 5</code>.
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem;">
+              *Recovery requires 3&ndash;5 consecutive healthy windows (hysteresis dampening).
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HTTP Response Status Distribution -->
+    <div class="section-responses">
+      <div class="section-title">
+        <span>HTTP Response Status Distribution</span>
+      </div>
+      <div class="status-codes-grid">
+        <div class="status-code-pill code-2xx">
+          <div>
+            <div class="code-name">2xx Success</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">200 OK / Healthy</div>
+          </div>
+          <div class="code-count" id="count-2xx">0</div>
+        </div>
+        <div class="status-code-pill code-3xx">
+          <div>
+            <div class="code-name">3xx Redirect</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">301 / 304</div>
+          </div>
+          <div class="code-count" id="count-3xx">0</div>
+        </div>
+        <div class="status-code-pill code-4xx">
+          <div>
+            <div class="code-name">4xx Client Error</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">400 / 404 / 405</div>
+          </div>
+          <div class="code-count" id="count-4xx">0</div>
+        </div>
+        <div class="status-code-pill code-5xx">
+          <div>
+            <div class="code-name">5xx Server Error</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">500 / 501 / 503 Shed</div>
+          </div>
+          <div class="code-count" id="count-5xx">0</div>
+        </div>
+      </div>
+
+      <div class="distribution-bar">
+        <div id="bar-2xx" class="dist-segment dist-2xx" style="width: 100%;"></div>
+        <div id="bar-3xx" class="dist-segment dist-3xx" style="width: 0%;"></div>
+        <div id="bar-4xx" class="dist-segment dist-4xx" style="width: 0%;"></div>
+        <div id="bar-5xx" class="dist-segment dist-5xx" style="width: 0%;"></div>
+      </div>
+
+      <div class="tradeoff-note">
+        <strong>Systems Accounting Invariant:</strong> Successful throughput is calculated exclusively from verified <strong>2xx application responses</strong>.
+        HTTP 503 overload shedding responses (categorized under 5xx) are recorded separately to prevent false throughput inflation during traffic bursts.
+      </div>
+    </div>
+
+    <!-- Live Interactive Console & API Verification -->
+    <div class="section-console">
+      <div class="section-title">
+        <span>Live Interactive Endpoint Verification</span>
+      </div>
+      <p class="section-desc">
+        Trigger live HTTP requests directly against this server instance to test socket dispatching, JSON serialization, and metrics incrementing in real-time.
+      </p>
+      <div class="console-controls">
+        <button id="btn-test-health" class="btn btn-primary" onclick="sendTestRequest('/health', 'GET')">GET /health</button>
+        <button id="btn-test-metrics" class="btn" onclick="sendTestRequest('/metrics', 'GET')">GET /metrics</button>
+        <button id="btn-test-echo" class="btn" onclick="sendTestPost('/api/echo', 'Hello from systems dashboard live verification!')">POST /api/echo</button>
+        <button id="btn-test-404" class="btn" onclick="sendTestRequest('/non-existent-file-404', 'GET')">Trigger 404</button>
+      </div>
+      <div class="console-output" id="console-output">// Server console output initialized. Click an action above to transmit a request...</div>
+    </div>
+
+    <!-- Architecture & Systems Specifications Table -->
+    <div class="section-specs">
+      <div class="section-title">
+        <span>Systems Implementation Specification</span>
+      </div>
       <table class="spec-table">
         <thead>
           <tr>
-            <th>Component</th>
-            <th>Specification</th>
-            <th>Runtime Role</th>
+            <th>Layer / Subsystem</th>
+            <th>Implementation Details</th>
+            <th>Architectural Role &amp; RFC Standards</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>Transport Protocol</td>
-            <td>POSIX TCP Sockets (IPv4/IPv6)</td>
-            <td>Stream listener, connection queueing, non-blocking polling</td>
+            <td>POSIX Raw TCP Sockets (IPv4/IPv6)</td>
+            <td>Stream listener, SO_REUSEADDR, non-blocking polling, TCP_NODELAY</td>
           </tr>
           <tr>
-            <td>Concurrency Model</td>
-            <td>Fixed pthread Worker Pool</td>
-            <td>Eliminates per-request fork overhead; processes connections</td>
+            <td>Concurrency Engine</td>
+            <td>Fixed-size pthread Worker Pool</td>
+            <td>Pre-allocated worker threads eliminate fork/creation latency under load</td>
           </tr>
           <tr>
             <td>Connection Queue</td>
-            <td>Thread-Safe Bounded FIFO</td>
-            <td>Absorbs traffic bursts; enforces strict memory boundaries</td>
+            <td>Thread-Safe Bounded Circular FIFO</td>
+            <td>Condition variable synchronization; prevents memory exhaustion under traffic surges</td>
+          </tr>
+          <tr>
+            <td>HTTP Parsing Engine</td>
+            <td>Streaming RFC 9112 State Machine</td>
+            <td>Zero-copy request tokenization, header case-insensitivity, Content-Length framing</td>
           </tr>
           <tr>
             <td>Overload Control</td>
-            <td>QLAAC (Queue &amp; Latency Aware)</td>
-            <td>Monitors p95 response time and queue depth to prevent thrashing</td>
+            <td>QLAAC State Controller</td>
+            <td>Hysteresis dampening, keep-alive throttling, and rapid 503 shedding</td>
+          </tr>
+          <tr>
+            <td>Static Asset Delivery</td>
+            <td>Linux sendfile(2) Zero-Copy Transfer</td>
+            <td>Kernel-space buffer forwarding directly between disk descriptor and socket</td>
+          </tr>
+          <tr>
+            <td>Security Hardening</td>
+            <td>Defensive Canonicalization &amp; Timeouts</td>
+            <td>realpath validation blocks directory traversal; socket deadlines mitigate Slowloris</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <div class="grid">
-      <div class="card">
-        <div class="card-label">Active Worker Threads</div>
-        <div class="card-value" id="val-workers">--</div>
-        <div class="card-desc">Worker pool threads actively serving requests</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Queue Occupancy</div>
-        <div class="card-value" id="val-queue">--</div>
-        <div class="card-desc">Pending client connections in bounded queue</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Median Latency (p50)</div>
-        <div class="card-value" id="val-p50">-- ms</div>
-        <div class="card-desc">Rolling 50th-percentile response time</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Tail Latency (p95)</div>
-        <div class="card-value" id="val-p95">-- ms</div>
-        <div class="card-desc">Rolling 95th-percentile response time</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Completed Requests</div>
-        <div class="card-value" id="val-requests">--</div>
-        <div class="card-desc">Total HTTP transactions completed successfully</div>
-      </div>
-      <div class="card">
-        <div class="card-label">QLAAC State</div>
-        <div class="card-value" id="val-qlaac">NORMAL</div>
-        <div class="card-desc">Adaptive admission control state machine</div>
-      </div>
-    </div>
-
     <footer>
-      <p>Computer Networks Systems Project &bull; RFC 9112 Protocol Target &bull; C17 / POSIX.1-2008</p>
+      <div>Computer Networks Project &bull; Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server from Scratch</div>
+      <div>Engineered in C17 using Raw TCP Sockets and POSIX Threads &bull; Zero External Framework Dependencies</div>
     </footer>
   </div>
 
   <script>
+    // Client-side rolling history for charts (bounded to 30 points)
+    const MAX_POINTS = 30;
+    const historyData = {
+      labels: [],
+      rps: [],
+      p50: [],
+      p95: [],
+      p99: []
+    };
+
+    let isServerOnline = false;
+
+    // Helper: format bytes
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // Helper: format seconds uptime
+    function formatUptime(seconds) {
+      if (!seconds || seconds <= 0) return '0s';
+      const d = Math.floor(seconds / 86400);
+      const h = Math.floor((seconds % 86400) / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      if (d > 0) return `${d}d ${h}h ${m}m`;
+      if (h > 0) return `${h}h ${m}m ${s}s`;
+      if (m > 0) return `${m}m ${s}s`;
+      return `${s}s`;
+    }
+
+    // Simple, responsive vanilla Canvas line chart renderer
+    function drawChart(canvasId, seriesList, unit, isMulti = false) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const width = rect.width;
+      const height = rect.height;
+      ctx.clearRect(0, 0, width, height);
+
+      const padTop = 15;
+      const padBottom = 25;
+      const padLeft = 40;
+      const padRight = 15;
+      const chartW = width - padLeft - padRight;
+      const chartH = height - padTop - padBottom;
+
+      // Draw faint background grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i <= 3; i++) {
+        const y = padTop + (chartH / 3) * i;
+        ctx.moveTo(padLeft, y);
+        ctx.lineTo(width - padRight, y);
+      }
+      ctx.stroke();
+
+      // Find max value across all series (ignoring null/undefined/NaN)
+      let maxVal = 1;
+      let hasAnyValidPoint = false;
+      seriesList.forEach(s => {
+        s.data.forEach(v => {
+          if (v !== null && v !== undefined && !isNaN(v)) {
+            hasAnyValidPoint = true;
+            if (v > maxVal) maxVal = v;
+          }
+        });
+      });
+      maxVal = maxVal * 1.15; // padding top
+
+      // Draw Y-axis labels
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      for (let i = 0; i <= 3; i++) {
+        const y = padTop + (chartH / 3) * i;
+        const val = maxVal - (maxVal / 3) * i;
+        ctx.fillText(val >= 100 ? val.toFixed(0) : val.toFixed(1), padLeft - 6, y);
+      }
+
+      if (seriesList[0].data.length < 2) {
+        ctx.fillStyle = '#64748b';
+        ctx.textAlign = 'center';
+        ctx.fillText('Accumulating telemetry samples...', width / 2, height / 2);
+        return;
+      }
+
+      // If all points in this chart are null (idle period with no samples):
+      if (isMulti && !hasAnyValidPoint) {
+        ctx.fillStyle = '#64748b';
+        ctx.textAlign = 'center';
+        ctx.fillText('Idle — no recent samples', width / 2, height / 2);
+        return;
+      }
+
+      // Draw each series
+      seriesList.forEach(series => {
+        const pts = series.data;
+        const step = chartW / (MAX_POINTS - 1);
+        const startX = width - padRight - (pts.length - 1) * step;
+
+        ctx.strokeStyle = series.color;
+        ctx.lineWidth = series.lineWidth || 2;
+        ctx.beginPath();
+
+        let inSegment = false;
+        pts.forEach((v, idx) => {
+          const x = startX + idx * step;
+          if (v === null || v === undefined || isNaN(v)) {
+            inSegment = false;
+            return;
+          }
+          const y = padTop + chartH - (v / maxVal) * chartH;
+          if (!inSegment) {
+            ctx.moveTo(x, y);
+            inSegment = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.stroke();
+
+        // Draw points for isolated samples (where prev and next are null or boundaries)
+        pts.forEach((v, idx) => {
+          if (v === null || v === undefined || isNaN(v)) return;
+          const prevNull = (idx === 0 || pts[idx - 1] === null || pts[idx - 1] === undefined || isNaN(pts[idx - 1]));
+          const nextNull = (idx === pts.length - 1 || pts[idx + 1] === null || pts[idx + 1] === undefined || isNaN(pts[idx + 1]));
+          if (prevNull && nextNull) {
+            const x = startX + idx * step;
+            const y = padTop + chartH - (v / maxVal) * chartH;
+            ctx.beginPath();
+            ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = series.color;
+            ctx.fill();
+          }
+        });
+
+        // If single series with fillColor (e.g. throughput chart) and no nulls
+        if (!isMulti && series.fillColor) {
+          ctx.beginPath();
+          pts.forEach((v, idx) => {
+            const x = startX + idx * step;
+            const y = padTop + chartH - (v / maxVal) * chartH;
+            if (idx === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          });
+          ctx.lineTo(startX + (pts.length - 1) * step, padTop + chartH);
+          ctx.lineTo(startX, padTop + chartH);
+          ctx.closePath();
+          ctx.fillStyle = series.fillColor;
+          ctx.fill();
+        }
+      });
+    }
+
+    // Live Telemetry Poller
     async function updateTelemetry() {
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+
       try {
         const response = await fetch('/metrics', { cache: 'no-store' });
-        if (!response.ok) return;
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
 
-        document.getElementById('val-workers').innerText = data.active_workers ?? '0';
-        document.getElementById('val-queue').innerText = data.current_queue_depth ?? '0';
-        document.getElementById('val-p50').innerText = (data.median_latency_ms?.toFixed(2) ?? '--') + ' ms';
-        document.getElementById('val-p95').innerText = (data.p95_latency_ms?.toFixed(2) ?? '--') + ' ms';
-        document.getElementById('val-requests').innerText = data.total_requests_completed ?? '0';
-        document.getElementById('val-qlaac').innerText = data.qlaac_state ?? 'NORMAL';
+        isServerOnline = true;
+        document.getElementById('status-text').innerText = 'Online (HTTP/1.1 Live)';
+        document.getElementById('server-status').className = 'status-badge';
+        document.getElementById('last-refresh-time').innerText = timeStr;
 
-        const statusText = document.getElementById('status-text');
-        statusText.innerText = 'Server Active (HTTP/1.1)';
+        // QLAAC mode badge
+        const qlaacModeEl = document.getElementById('qlaac-mode-badge');
+        if (data.qlaac_enabled === true || data.qlaac_enabled === "true") {
+          qlaacModeEl.className = 'mode-badge';
+          qlaacModeEl.innerText = 'QLAAC: ENABLED';
+        } else {
+          qlaacModeEl.className = 'mode-badge disabled';
+          qlaacModeEl.innerText = 'QLAAC: DISABLED (Baseline)';
+        }
+
+        // 1. Throughput & Requests
+        const rps = data.requests_per_second ?? 0.0;
+        document.getElementById('val-rps').innerText = rps.toFixed(2);
+        document.getElementById('val-lifetime-rps').innerText = (data.lifetime_requests_per_second ?? 0.0).toFixed(2);
+        document.getElementById('val-requests').innerText = (data.total_requests_completed ?? 0).toLocaleString();
+
+        // 2. Latencies
+        // Distinguish between real 0 ms latency, idle window (no samples), and missing data
+        const sampleCount = data.recent_latency_sample_count;
+        const hasRecentSamples = (typeof sampleCount === 'number')
+          ? (sampleCount > 0)
+          : (rps > 0 || (typeof data.p95_latency_ms === 'number' && data.p95_latency_ms > 0));
+
+        const idleIndicator = document.getElementById('latency-idle-indicator');
+        if (idleIndicator) {
+          idleIndicator.style.display = hasRecentSamples ? 'none' : 'inline-flex';
+        }
+
+        let p50 = null;
+        let p95 = null;
+        let p99 = null;
+        let avgLat = null;
+
+        if (hasRecentSamples) {
+          p50 = (typeof data.median_latency_ms === 'number' && !isNaN(data.median_latency_ms)) ? data.median_latency_ms : null;
+          p95 = (typeof data.p95_latency_ms === 'number' && !isNaN(data.p95_latency_ms)) ? data.p95_latency_ms : null;
+          p99 = (typeof data.p99_latency_ms === 'number' && !isNaN(data.p99_latency_ms)) ? data.p99_latency_ms : null;
+          avgLat = (typeof data.avg_latency_ms === 'number' && !isNaN(data.avg_latency_ms)) ? data.avg_latency_ms : null;
+
+          document.getElementById('val-p95').innerHTML = `${(p95 !== null ? p95.toFixed(2) : '—')} <span style="font-size: 1rem; color: var(--text-muted);">ms (p95)</span>`;
+          document.getElementById('val-p50').innerText = `${(p50 !== null ? p50.toFixed(2) : '—')} ms`;
+          document.getElementById('val-p99').innerText = `${(p99 !== null ? p99.toFixed(2) : '—')} ms`;
+          document.getElementById('val-avg-lat').innerText = `${(avgLat !== null ? avgLat.toFixed(2) : '—')} ms`;
+        } else {
+          // Idle state - no recent latency samples
+          document.getElementById('val-p95').innerHTML = `&mdash; <span style="font-size: 0.9rem; color: var(--text-muted);">ms (idle)</span>`;
+          document.getElementById('val-p50').innerText = `—`;
+          document.getElementById('val-p99').innerText = `—`;
+          document.getElementById('val-avg-lat').innerText = `—`;
+        }
+
+        // 3. Worker Pool
+        const activeWorkers = data.active_workers ?? 0;
+        const totalWorkers = data.total_workers ?? 4;
+        const workerPct = totalWorkers > 0 ? (activeWorkers / totalWorkers) * 100 : 0;
+        document.getElementById('val-workers').innerHTML = `${activeWorkers} <span style="font-size: 1rem; color: var(--text-muted);">active</span>`;
+        document.getElementById('val-total-workers').innerText = totalWorkers;
+        document.getElementById('val-worker-ratio').innerText = `${activeWorkers} / ${totalWorkers} active (${workerPct.toFixed(0)}%)`;
+        const workerMeter = document.getElementById('meter-workers');
+        workerMeter.style.width = `${Math.min(100, Math.max(3, workerPct))}%`;
+        workerMeter.className = 'meter-fill ' + (workerPct >= 100 ? 'overload' : workerPct >= 85 ? 'caution' : 'normal');
+
+        // 4. Queue Depth
+        const qDepth = data.current_queue_depth ?? 0;
+        const qCap = data.queue_capacity ?? 64;
+        const queuePct = qCap > 0 ? (qDepth / qCap) * 100 : 0;
+        document.getElementById('val-queue').innerHTML = `${qDepth} <span style="font-size: 1rem; color: var(--text-muted);">queued</span>`;
+        document.getElementById('val-queue-cap').innerText = qCap;
+        document.getElementById('val-queue-ratio').innerText = `${qDepth} / ${qCap} (${queuePct.toFixed(0)}%)`;
+        const queueMeter = document.getElementById('meter-queue');
+        queueMeter.style.width = `${Math.min(100, Math.max(3, queuePct))}%`;
+        queueMeter.className = 'meter-fill ' + (queuePct >= 90 ? 'overload' : queuePct >= 70 ? 'caution' : 'normal');
+
+        // 5. Connection counters
+        document.getElementById('val-conns-accepted').innerHTML = `${(data.total_connections_accepted ?? 0).toLocaleString()} <span style="font-size: 1rem; color: var(--text-muted);">accepted</span>`;
+        document.getElementById('val-conns-rejected').innerText = (data.total_connections_rejected ?? 0).toLocaleString();
+        document.getElementById('val-overload-503').innerText = (data.total_overload_503_sent ?? 0).toLocaleString();
+
+        // 6. Uptime & Bytes
+        document.getElementById('val-uptime').innerText = formatUptime(data.uptime_seconds);
+        document.getElementById('val-bytes-rx').innerText = formatBytes(data.bytes_received);
+        document.getElementById('val-bytes-tx').innerText = formatBytes(data.bytes_sent);
+
+        // 7. QLAAC Visualisation
+        const qState = (data.qlaac_state || 'NORMAL').toUpperCase();
+        const badgeState = document.getElementById('qlaac-badge-state');
+        badgeState.innerText = qState;
+        badgeState.className = `qlaac-badge-large ${qState}`;
+
+        const explanationEl = document.getElementById('qlaac-state-explanation');
+        if (qState === 'NORMAL') {
+          explanationEl.innerText = 'Operating within safe bounds. All requests and connections admitted normally. Keep-alive persistent sockets fully supported.';
+        } else if (qState === 'CAUTION') {
+          explanationEl.innerText = 'Early-warning threshold triggered (workers saturated or queue elevated). Tightening keep-alive (Connection: close) to bound tail latency. All new requests admitted.';
+        } else if (qState === 'OVERLOAD') {
+          explanationEl.innerText = 'Critical queue buffer saturation or tail latency breach. Actively shedding incoming connections with immediate HTTP 503 (Retry-After: 5) to protect server stability.';
+        }
+
+        document.getElementById('val-qlaac-trans').innerText = (data.qlaac_overload_transitions ?? 0).toLocaleString();
+        document.getElementById('val-qlaac-shed').innerText = (data.qlaac_shed_requests ?? data.total_overload_503_sent ?? 0).toLocaleString();
+
+        // Dynamic threshold signal meters
+        document.getElementById('val-signal-workers').innerText = `${workerPct.toFixed(1)}%`;
+        const sigWorkerMeter = document.getElementById('meter-signal-workers');
+        sigWorkerMeter.style.width = `${Math.min(100, Math.max(3, workerPct))}%`;
+        sigWorkerMeter.className = 'meter-fill ' + (workerPct >= 100 ? 'overload' : workerPct >= 85 ? 'caution' : 'normal');
+
+        document.getElementById('val-signal-queue').innerText = `${queuePct.toFixed(1)}%`;
+        const sigQueueMeter = document.getElementById('meter-signal-queue');
+        sigQueueMeter.style.width = `${Math.min(100, Math.max(3, queuePct))}%`;
+        sigQueueMeter.className = 'meter-fill ' + (queuePct >= 90 ? 'overload' : queuePct >= 70 ? 'caution' : 'normal');
+
+        const latVal = (hasRecentSamples && p95 !== null) ? p95 : 0.0;
+        document.getElementById('val-signal-lat').innerText = hasRecentSamples ? `${latVal.toFixed(2)} ms` : '— (idle)';
+        const sigLatMeter = document.getElementById('meter-signal-lat');
+        const latPct = hasRecentSamples ? Math.min(100, Math.max(3, (latVal / 150.0) * 100)) : 0;
+        sigLatMeter.style.width = `${latPct}%`;
+        sigLatMeter.className = 'meter-fill ' + (latVal >= 150.0 ? 'overload' : latVal >= 50.0 ? 'caution' : 'normal');
+
+        // 8. HTTP Response Breakdown
+        const c2xx = data.status_codes?.['2xx'] ?? 0;
+        const c3xx = data.status_codes?.['3xx'] ?? 0;
+        const c4xx = data.status_codes?.['4xx'] ?? 0;
+        const c5xx = data.status_codes?.['5xx'] ?? 0;
+        document.getElementById('count-2xx').innerText = c2xx.toLocaleString();
+        document.getElementById('count-3xx').innerText = c3xx.toLocaleString();
+        document.getElementById('count-4xx').innerText = c4xx.toLocaleString();
+        document.getElementById('count-5xx').innerText = c5xx.toLocaleString();
+
+        const totalCodes = c2xx + c3xx + c4xx + c5xx;
+        if (totalCodes > 0) {
+          document.getElementById('bar-2xx').style.width = `${(c2xx / totalCodes) * 100}%`;
+          document.getElementById('bar-3xx').style.width = `${(c3xx / totalCodes) * 100}%`;
+          document.getElementById('bar-4xx').style.width = `${(c4xx / totalCodes) * 100}%`;
+          document.getElementById('bar-5xx').style.width = `${(c5xx / totalCodes) * 100}%`;
+        }
+
+        // 9. Update History Buffers for Live Charts
+        historyData.labels.push(timeStr);
+        historyData.rps.push(rps);
+        historyData.p50.push(p50);
+        historyData.p95.push(p95);
+        historyData.p99.push(p99);
+
+        if (historyData.labels.length > MAX_POINTS) {
+          historyData.labels.shift();
+          historyData.rps.shift();
+          historyData.p50.shift();
+          historyData.p95.shift();
+          historyData.p99.shift();
+        }
+
+        // Render Canvas Charts
+        drawChart('chart-throughput', [
+          {
+            data: historyData.rps,
+            color: '#38bdf8',
+            fillColor: 'rgba(56, 189, 248, 0.12)',
+            lineWidth: 2
+          }
+        ], 'RPS', false);
+
+        drawChart('chart-latency', [
+          { data: historyData.p50, color: '#10b981', lineWidth: 1.8 },
+          { data: historyData.p95, color: '#f59e0b', lineWidth: 2.2 },
+          { data: historyData.p99, color: '#a855f7', lineWidth: 2.2 }
+        ], 'ms', true);
+
       } catch (err) {
-        // Server or endpoint not yet serving JSON metrics
+        isServerOnline = false;
+        const badge = document.getElementById('server-status');
+        badge.className = 'status-badge reconnecting';
+        document.getElementById('status-text').innerText = 'Reconnecting to server...';
+        const idleIndicator = document.getElementById('latency-idle-indicator');
+        if (idleIndicator) {
+          idleIndicator.style.display = 'inline-flex';
+          idleIndicator.innerText = 'Offline — no telemetry';
+        }
       }
     }
 
-    setInterval(updateTelemetry, 2000);
+    // Live endpoint testing helper
+    async function sendTestRequest(endpoint, method) {
+      const output = document.getElementById('console-output');
+      output.innerText = `>>> Transmitting ${method} ${endpoint}...`;
+      const t0 = performance.now();
+      try {
+        const res = await fetch(endpoint, { method, cache: 'no-store' });
+        const dur = (performance.now() - t0).toFixed(2);
+        const text = await res.text();
+        output.innerText = `<<< HTTP/1.1 ${res.status} ${res.statusText} (${dur} ms)\n` +
+                           `Content-Type: ${res.headers.get('content-type') || 'none'}\n\n` +
+                           text.slice(0, 500) + (text.length > 500 ? ' ... [truncated]' : '');
+        updateTelemetry();
+      } catch (e) {
+        output.innerText = `!!! Request error: ${e.message}`;
+      }
+    }
+
+    async function sendTestPost(endpoint, bodyText) {
+      const output = document.getElementById('console-output');
+      output.innerText = `>>> Transmitting POST ${endpoint} (Body: "${bodyText}")...`;
+      const t0 = performance.now();
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+          body: bodyText
+        });
+        const dur = (performance.now() - t0).toFixed(2);
+        const text = await res.text();
+        output.innerText = `<<< HTTP/1.1 ${res.status} ${res.statusText} (${dur} ms)\n` +
+                           `Content-Type: ${res.headers.get('content-type') || 'none'}\n\n` +
+                           text;
+        updateTelemetry();
+      } catch (e) {
+        output.innerText = `!!! Request error: ${e.message}`;
+      }
+    }
+
+    // Resize handling for dynamic Canvas charts
+    window.addEventListener('resize', () => {
+      drawChart('chart-throughput', [
+        { data: historyData.rps, color: '#38bdf8', fillColor: 'rgba(56, 189, 248, 0.12)', lineWidth: 2 }
+      ], 'RPS', false);
+
+      drawChart('chart-latency', [
+        { data: historyData.p50, color: '#10b981', lineWidth: 1.8 },
+        { data: historyData.p95, color: '#f59e0b', lineWidth: 2.2 },
+        { data: historyData.p99, color: '#a855f7', lineWidth: 2.2 }
+      ], 'ms', true);
+    });
+
+    // Start polling immediately and then every 1.5 seconds
+    updateTelemetry();
+    setInterval(updateTelemetry, 1500);
   </script>
 </body>
 </html>

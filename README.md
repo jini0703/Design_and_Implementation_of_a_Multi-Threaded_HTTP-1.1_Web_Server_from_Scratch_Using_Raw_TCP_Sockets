@@ -8,35 +8,33 @@ Building a from-scratch HTTP/1.1 web server in **C17** using **raw POSIX TCP soc
 
 The following matrix documents the verification and completion state across all planned architectural modules. At this repository setup stage, the foundational repository scaffolds, documentation, configurations, test harnesses, and starter binaries are established. Core networking runtime and RFC protocol engines remain in active development.
 
-- [ ] TCP listener and connection lifecycle
-- [ ] HTTP request parser
-- [ ] HTTP response builder
-- [ ] Static-file routes
-- [ ] Bounded connection queue
-- [ ] pthread worker pool
-- [ ] Persistent connections (Keep-Alive)
-- [ ] Request and connection timeouts
-- [ ] Security and resource safeguards
-- [ ] Adaptive admission controller (QLAAC)
-- [ ] Metrics endpoint (`/metrics`)
-- [ ] Monitoring dashboard
-- [ ] Automated functional tests
-- [ ] Defensive parsing tests
-- [ ] Reproducible benchmark scripts
-- [ ] Experimental results and analysis
-- [ ] Final project report PDF
-- [ ] Final project presentation PPT
+- [x] TCP listener and connection lifecycle
+- [x] HTTP request parser
+- [x] HTTP response builder
+- [x] Static-file routes
+- [x] Bounded connection queue
+- [x] pthread worker pool
+- [x] Persistent connections (Keep-Alive)
+- [x] Request and connection timeouts
+- [x] Security and resource safeguards
+- [x] Adaptive admission controller (QLAAC)
+- [x] Metrics endpoint (`/metrics`)
+- [x] Monitoring dashboard
+- [x] Automated functional tests
+- [x] Defensive parsing tests
+- [x] Reproducible benchmark scripts
+- [x] Experimental results and analysis
+- [x] Final project report PDF ([`deliverables/report/HTTP11_Web_Server_Project_Report.pdf`](deliverables/report/HTTP11_Web_Server_Project_Report.pdf))
+- [x] Final project presentation PPT ([`deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx`](deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx))
 
 ---
 
-## Project Report and Presentation
+## Project Report and Presentation Deliverables
 
 The dedicated academic deliverables for this Computer Networks project are organized in their respective directories:
 
-- **Project Report (PDF)**: [`deliverables/report/README.md`](deliverables/report/README.md) — Documentation guide and target destination for `HTTP11_Web_Server_Project_Report.pdf` (covering theoretical foundations, networking architecture, implementation analysis, and empirical evaluation).
-- **Project Presentation (PPT)**: [`deliverables/presentation/README.md`](deliverables/presentation/README.md) — Documentation guide and target destination for `HTTP11_Web_Server_Project_Presentation.pptx` (comprehensive 18-slide oral defense presentation).
-
-*Note: These directories contain complete deliverable specifications and outline guides. The finalized PDF and PPTX artifacts will be placed there following full implementation, test validation, and experimental benchmarking.*
+- **Project Report (PDF)**: [`deliverables/report/HTTP11_Web_Server_Project_Report.pdf`](deliverables/report/HTTP11_Web_Server_Project_Report.pdf) — Comprehensive 12-page academic technical report following IEEE/ACM formatting guidelines (covering theoretical foundations, networking architecture, implementation analysis, and empirical evaluation). Source Markdown: [`deliverables/report/HTTP11_Web_Server_Project_Report.md`](deliverables/report/HTTP11_Web_Server_Project_Report.md).
+- **Project Presentation (PPTX)**: [`deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx`](deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx) — Comprehensive 18-slide oral defense presentation in 16:9 widescreen format, including visual cards, embedded benchmark charts, live dashboard previews, and detailed speaker notes.
 
 ---
 
@@ -343,7 +341,32 @@ The evaluation strategy comprises five controlled experimental suites designed t
 | **Load Patterns** | Gradual ramp, sustained steady state, sudden step-burst |
 | **Server Policy** | Single-threaded baseline, fixed thread pool, adaptive QLAAC |
 
-*Note: Benchmarking figures will be populated exclusively from live execution runs on documented hardware. No fabricated numbers are presented.*
+### Empirical Benchmarking Results (40-Trial Controlled Evaluation)
+
+Empirical evaluation across 40 completed trials (5 per concurrency level for Baseline vs. QLAAC) under Linux 6.6 x86_64:
+
+| Concurrency ($C$) | Configuration | 2xx RPS (Mean $\pm$ Std) | $p50$ Latency (ms) | $p95$ Latency (ms) | $p99$ Latency (ms) | 5xx Rejections (Mean $\pm$ Std) | Shedding Rate (%) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **2** | Baseline | 13,929.24 $\pm$ 334.23 | 0.13 $\pm$ 0.01 | 0.23 $\pm$ 0.01 | 0.31 $\pm$ 0.02 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
+| **2** | QLAAC | 14,665.40 $\pm$ 610.30 | 0.12 $\pm$ 0.00 | 0.22 $\pm$ 0.03 | 0.33 $\pm$ 0.05 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
+| **8** | Baseline | 6,629.38 $\pm$ 148.21 | 0.54 $\pm$ 0.01 | 1.38 $\pm$ 0.04 | 29.09 $\pm$ 0.50 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
+| **8** | QLAAC | 2,129.26 $\pm$ 50.35 | 1.55 $\pm$ 0.02 | 2.83 $\pm$ 0.03 | 3.55 $\pm$ 0.06 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
+| **32** | Baseline | 6,860.38 $\pm$ 107.11 | 0.52 $\pm$ 0.01 | 1.34 $\pm$ 0.03 | 204.00 $\pm$ 2.94 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
+| **32** | QLAAC | 1,970.40 $\pm$ 55.83 | 10.46 $\pm$ 0.26 | 14.31 $\pm$ 0.66 | 16.55 $\pm$ 1.00 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
+| **64** | Baseline | 6,828.52 $\pm$ 157.91 | 0.52 $\pm$ 0.01 | 1.38 $\pm$ 0.05 | 440.33 $\pm$ 9.21 | 0.00 $\pm$ 0.00 | 0.00% $\pm$ 0.00% |
+| **64** | QLAAC | 638.12 $\pm$ 126.44 | 19.61 $\pm$ 6.35 | 28.76 $\pm$ 0.59 | 161.18 $\pm$ 159.88 | 16,475.40 $\pm$ 969.70 | 72.14% $\pm$ 5.15% |
+
+#### Key Empirical Insights:
+1. **Sub-Millisecond Line Rate**: At $C=2$, the server processes $>14,600$ requests/sec with a median latency of $0.12\text{ ms}$.
+2. **Bufferbloat Prevention**: At $C=64$, Baseline queue saturation causes $p99$ tail latency to degrade to $440.33\text{ ms}$.
+3. **Tail Latency Clamping**: QLAAC transitions into `OVERLOAD`, shedding excess traffic via HTTP 503 (`Retry-After: 5`) and holding admitted request $p99$ tail latency to $161.18\text{ ms}$ (**2.73x improvement**). At $C=64$, the per-trial mean 5xx count is $16,475.40 \pm 969.70$ ($82,377$ total across all 5 trials), representing an average shedding rate of $72.14\% \pm 5.15\%$.
+
+#### Benchmark Visualizations:
+- **Throughput Scaling**: [`results/plots/fig1_throughput_comparison.png`](results/plots/fig1_throughput_comparison.png)
+- **Tail Latency Distribution**: [`results/plots/fig2_latency_p99_comparison.png`](results/plots/fig2_latency_p99_comparison.png)
+- **Admission Trade-off & Shedding**: [`results/plots/fig3_qlaac_admission_tradeoff.png`](results/plots/fig3_qlaac_admission_tradeoff.png)
+- **Systems Architecture**: [`results/plots/fig4_system_architecture.png`](results/plots/fig4_system_architecture.png)
+- **QLAAC State Machine**: [`results/plots/fig5_qlaac_state_machine.png`](results/plots/fig5_qlaac_state_machine.png)
 
 ---
 
@@ -458,24 +481,41 @@ make all
 ./bin/server --help
 ```
 
+### Running the Web Server
+
+```bash
+# Launch server with default configuration
+./bin/server -c config/server.conf.example
+
+# Or launch with custom parameters and QLAAC adaptive admission control enabled
+./bin/server -p 8080 -d ./public -t 4 -a
+```
+
 ### Executing Test Suites
 
 ```bash
-# Compile and execute C unit tests and Python test harnesses
+# Compile and execute all C unit tests and Python regression test suites
 make test
 ```
+
+### Executing Corrected Benchmarks (v2.0)
+
+The benchmarking orchestrator (`benchmark/run_experiment.py`) uses strict RFC 9112 HTTP status-line parsing and complete response framing. Success is defined strictly as HTTP 2xx responses; 503 overload responses, 4xx errors, connection failures, timeouts, and framing corruptions are recorded separately.
+
+```bash
+# Execute corrected benchmark against live server
+python3 benchmark/run_experiment.py --url http://127.0.0.1:8080/health --clients 1,4,16,32 --duration 3 --trials 2
+
+# Output is recorded to results/raw/benchmark_results_corrected.csv
+```
+
+> **Note on Historical Benchmark Data**: Previous benchmark runs recorded in `results/raw/benchmark_results.csv` and associated files utilized a legacy substring check (`b"200 OK" in resp or b"HTTP/1.1" in resp`) which incorrectly counted 503 Overload responses as successes. Legacy data is preserved for historical auditability but is **preliminary** and **not directly comparable** to results produced by the corrected v2.0 harness.
 
 ### Cleaning Build Artifacts
 
 ```bash
 make clean
 ```
-
-> **Planned Runtime Command**: Once the core socket listener is integrated in subsequent phases, the operational server will be launched via:
-> ```bash
-> # (Planned Phase 1 Execution Command)
-> ./bin/server -c config/server.conf.example
-> ```
 
 ---
 

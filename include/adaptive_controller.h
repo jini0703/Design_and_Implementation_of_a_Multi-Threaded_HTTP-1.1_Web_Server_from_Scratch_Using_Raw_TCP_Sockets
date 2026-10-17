@@ -10,13 +10,13 @@
  *
  * Module Responsibilities:
  *  - Implement the experimental Queue-and-Latency-Aware Admission Control (QLAAC) state machine.
- *  - Continuously ingest pending connection queue occupancy, worker utilization, and p95 latency.
+ *  - Ingest queue occupancy, worker utilization, and p95 latency.
  *  - Transition between three operational states:
  *      * QLAAC_STATE_NORMAL: Unrestricted standard connection processing within queue bounds.
  *      * QLAAC_STATE_CAUTION: Pre-emptive tightening of keep-alive limits and timeouts.
  *      * QLAAC_STATE_OVERLOAD: Rapid shedding of new connections (immediate HTTP 503 Service Unavailable).
- *  - Provide hysteresis to prevent state oscillation (flapping) during erratic burst traffic.
- *  - Record admission decisions, shedding events, and recovery intervals for experimental evaluation.
+ *  - Enforce hysteresis dampening to prevent oscillation during bursty traffic.
+ *  - Log state transitions cleanly without hot-path overhead.
  */
 
 #include <stdbool.h>
@@ -51,7 +51,10 @@ typedef struct {
     double queue_overload_threshold;  /**< e.g. 0.90 (90% full) */
     double latency_caution_ms;        /**< e.g. 50.0 ms p95 */
     double latency_overload_ms;       /**< e.g. 150.0 ms p95 */
+    double worker_caution_threshold;  /**< e.g. 0.85 (85% busy) */
+    double worker_overload_threshold; /**< e.g. 1.00 (100% busy) */
     size_t recovery_samples_required; /**< e.g. 5 consecutive healthy windows */
+    size_t sustained_pressure_threshold; /**< e.g. 3 consecutive pressure windows to enter overload */
 } QlaacConfig;
 
 /**
@@ -61,6 +64,7 @@ typedef struct {
     QlaacConfig config;
     QlaacState current_state;
     size_t consecutive_healthy_samples;
+    size_t consecutive_pressure_samples;
     uint64_t total_overload_transitions;
     uint64_t total_shed_requests;
     pthread_mutex_t lock;
@@ -81,8 +85,21 @@ void adaptive_controller_init(QlaacController *controller, const QlaacConfig *co
  * @return Newly computed or current QlaacState.
  */
 QlaacState adaptive_controller_update(QlaacController *controller,
-                                     double queue_occupancy_ratio,
-                                     double p95_latency_ms);
+                                      double queue_occupancy_ratio,
+                                      double p95_latency_ms);
+
+/**
+ * @brief Ingest full metrics including worker utilization and evaluate transitions.
+ * @param controller Controller struct.
+ * @param queue_occupancy_ratio Ratio of current queue depth to capacity (0.0 - 1.0).
+ * @param worker_utilization_ratio Ratio of active workers to total workers (0.0 - 1.0).
+ * @param p95_latency_ms Recent 95th-percentile response latency in milliseconds.
+ * @return Newly computed or current QlaacState.
+ */
+QlaacState adaptive_controller_update_ex(QlaacController *controller,
+                                         double queue_occupancy_ratio,
+                                         double worker_utilization_ratio,
+                                         double p95_latency_ms);
 
 /**
  * @brief Evaluate an admission decision for an incoming connection under current state.

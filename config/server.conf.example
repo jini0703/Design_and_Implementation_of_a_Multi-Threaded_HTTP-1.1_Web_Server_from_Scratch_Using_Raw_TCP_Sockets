@@ -11,7 +11,7 @@
 # 1. Network & Socket Configuration
 # ------------------------------------------------------------------------------
 # Host interface to bind on (0.0.0.0 binds to all available network interfaces)
-host = 0.0.0.0
+host = 127.0.0.1
 
 # Listening TCP port (standard unprivileged port for development)
 port = 8080
@@ -91,6 +91,15 @@ latency_caution_ms = 50.0
 
 # 95th percentile response latency threshold (in milliseconds) triggering OVERLOAD
 latency_overload_ms = 150.0
+
+# Worker thread pool utilization ratio (0.0 to 1.0) triggering early-warning CAUTION
+worker_caution_threshold = 0.85
+
+# Worker thread pool utilization ratio (0.0 to 1.0) for worker saturation early-warning signal
+worker_overload_threshold = 1.00
+
+# Number of consecutive sampling windows under sustained pressure required to trigger OVERLOAD
+sustained_pressure_threshold = 3
 
 # Number of consecutive normal sampling windows required before transitioning
 # from OVERLOAD or CAUTION back to NORMAL state (hysteresis dampening)

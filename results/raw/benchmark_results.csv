@@ -1,0 +1,4 @@
+timestamp,url,concurrency,trial,duration_sec,total_requests,requests_per_sec,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,errors
+1792151718,http://127.0.0.1:8080/health,1,1,2,26901,13450.50,0.07,0.06,0.14,0.21,0
+1792151720,http://127.0.0.1:8080/health,4,1,2,35271,17635.50,0.21,0.18,0.47,0.66,0
+1792151723,http://127.0.0.1:8080/health,16,1,2,28551,14275.50,1.10,0.23,0.74,41.57,0

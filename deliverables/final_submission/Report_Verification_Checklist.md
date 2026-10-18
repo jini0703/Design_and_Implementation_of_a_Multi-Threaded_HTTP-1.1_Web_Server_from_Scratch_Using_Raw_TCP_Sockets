@@ -1,6 +1,6 @@
 # Report Verification Checklist — BCSE308P CN Lab Project
 
-**Files:** `CN_Project_Final_Report.docx` (editable, 42 pages), `CN_Project_Final_Report.pdf` (native Microsoft Word COM export of the same DOCX, 42 pages), this checklist.
+**Files:** `CN_Project_Final_Report.docx` (editable), `CN_Project_Final_Report.pdf` (46-page PDF rendered from the corrected DOCX using LibreOffice 25.2.3.2), this checklist. The current PDF and static table of contents are aligned to this LibreOffice rendering; pagination should be checked again if Microsoft Word is used to export a replacement PDF.
 
 ---
 
@@ -9,18 +9,18 @@
 | Template Requirement | Audit Status | Location in Report | Verification Details |
 |---|---|---|---|
 | **Cover Page** (Title 16 pt bold caps, particulars sorted by Reg. No., B.Tech., CSE, School, VIT logo, October 2026) | **COMPLETE & VERIFIED** | Page 1 | Sorted ascending: (1) 24BCE0702 — YASH PRADHAN, (2) 24BCE0714 — ANJINI PANDEY. Placeholders removed. VIT logo preserved. |
-| **Abstract** (One page, $\le 300$ words) | **COMPLETE & VERIFIED** | Page 2 | Exactly 292 words ($\le 300$, verified via Microsoft Word COM `ComputeStatistics(wdStatisticWords)`). Updated test statement: 72 automated tests (37 C, 35 Python) pass with a server running. |
+| **Abstract** (One page, $\le 300$ words) | **COUNT NEEDS WORD CONFIRMATION** | Page 2 | The current abstract has 297 whitespace-separated words and remains below the 300-word limit by that count. Confirm with Microsoft Word's word counter before submission. Test statement: 72 automated tests (37 C, 35 Python) pass with a server running. |
 | **Certificate** (Official VIT template wording) | **COMPLETE & VERIFIED** | Page 3 | Both students and registration numbers listed; placeholders removed; signature line present. |
-| **Table of Contents** (Static numbers matching final pagination) | **COMPLETE & VERIFIED** | Pages 4–5 | All 36 entries verified against native Word COM PDF pagination (42 pages total). Matches 100%. |
+| **Table of Contents** (Static numbers matching the current PDF) | **MATCHES CURRENT RENDER; WORD CHECK PENDING** | Pages 4–5 | Static page numbers have been corrected and checked against the current 46-page LibreOffice PDF generated from this DOCX. Recheck page numbers if the DOCX is reflowed/exported with Microsoft Word. |
 | **1. Introduction** (1.1–1.5) | **COMPLETE & VERIFIED** | Pages 6–8 | Section 1.5 editorial placeholder removed; formally mapped to core Computer Networks concepts. |
 | **2. Literature Survey** (2.1–2.3, template table) | **COMPLETE & VERIFIED** | Pages 9–11 | 6 survey rows; research gap and novelty justification formally framed. |
 | **3. Proposed System** (3.1–3.5, architecture, flowchart, pseudocode) | **COMPLETE & VERIFIED** | Pages 12–16 | Bounded queue (capacity 64) accurately documented; QLAAC 3-state machine and trade-offs explained. |
-| **4. Implementation** (4.1–4.4) | **COMPLETE & VERIFIED** | Pages 17–23 | Table 4.3 updated to verified `wc -l` source counts; Table 4.4 expanded with confirmed security, framing, and accounting fixes; 72 automated tests verified. |
-| **5. Evaluation** (5.1–5.5, results table, graphs, critical analysis) | **COMPLETE & VERIFIED** | Pages 24–31 | Primary empirical CSV dataset preserved (5 × 10 s, C = 2, 8, 32, 64); benchmark chronology clearly distinguished from subsequent regression tests; historical counter discrepancy qualified. |
-| **6. Conclusion** (6.1–6.3) | **COMPLETE & VERIFIED** | Pages 32–33 | Honest conclusions: throughput vs tail latency trade-off; QLAAC p95 exclusion of queue wait; counter bug marked resolved; genuine limitations (Slowloris) and future work retained. |
-| **7. References** (IEEE style) | **COMPLETE & VERIFIED** | Page 34 | All 11 citations verified with complete DOIs, volume, issue, and page numbers. |
-| **Appendix A** (Key code & config listings) | **COMPLETE & VERIFIED** | Pages 35–36 | Code excerpts verified against exact final source files; A.3 updated to side-effect-free `adaptive_controller_get_state()` worker query and accept-gate shedding. |
-| **Appendix B** (Screenshots, authentic test output, raw tables) | **COMPLETE & VERIFIED** | Pages 37–42 | Execution output documents 37 C unit tests and 35 Python tests (unit and integration suites, 72 total); AddressSanitizer, UBSan, and ThreadSanitizer results verified; raw tables and historical records complete. |
+| **4. Implementation** (4.1–4.4) | **COMPLETE & VERIFIED** | Pages 18–26 | Table 4.3 updated to verified `wc -l` source counts; Table 4.4 expanded with confirmed security, framing, and accounting fixes; 72 automated tests verified. |
+| **5. Evaluation** (5.1–5.5, results table, graphs, critical analysis) | **COMPLETE & VERIFIED** | Pages 27–34 | Primary empirical CSV dataset preserved (5 × 10 s, C = 2, 8, 32, 64); benchmark chronology clearly distinguished from subsequent regression tests; historical counter discrepancy qualified. |
+| **6. Conclusion** (6.1–6.3) | **COMPLETE & VERIFIED** | Pages 35–36 | Honest conclusions: throughput vs tail latency trade-off; QLAAC p95 exclusion of queue wait; counter bug marked resolved; genuine limitations (Slowloris) and future work retained. |
+| **7. References** (IEEE style) | **COMPLETE & VERIFIED** | Page 37 | All 11 citations verified with complete DOIs, volume, issue, and page numbers. |
+| **Appendix A** (Key code & config listings) | **COMPLETE & VERIFIED** | Pages 38–39 | Code excerpts verified against exact final source files; A.3 updated to side-effect-free `adaptive_controller_get_state()` worker query and accept-gate shedding. |
+| **Appendix B** (Screenshots, authentic test output, raw tables) | **COMPLETE & VERIFIED** | Pages 40–46 | Execution output documents 37 C unit tests and 35 Python tests (unit and integration suites, 72 total); AddressSanitizer, UBSan, and ThreadSanitizer results verified; raw tables and historical records complete. |
 
 ---
 
@@ -77,7 +77,7 @@
    - Verified actual textual execution logs citing authentic test suites.
 
 9. **Table of Contents & Pagination:**
-   - Updated static TOC page numbers in Table 1 to match native Microsoft Word COM rendering (42 pages). Every single section heading verified against its exact rendered page in the PDF.
+   - Updated the static TOC page numbers in the DOCX. Verified the principal section starts against the current 46-page PDF rendered from the DOCX using LibreOffice 25.2.3.2. Recheck pagination if a Microsoft Word export is used, as the layout engine may differ.
 
 10. **Queue-Wait Formula Dimension Correction (Table 5.4 & Section 5.4):**
     - Corrected the predicted-wait formula header in Table 5.4 from `rounds × 200 / X (ms)` to `rounds × (200 / X) × 1000 ms`.
@@ -88,8 +88,8 @@
     - Clarified in Section 5.3 (P[142]) and Appendix B.4 (P[324], P[325], Table B.4) that the quoted figures describe the pre-audit version of `CLAUDE_PACKAGE_README.md`, which has since been corrected to match empirical CSV data.
     - Preserved Table B.4 as a historical discrepancy record documenting what was previously stated versus the verified raw CSV data, rather than presenting it as a current error.
 
-12. **Abstract Word Count Recalculation via Microsoft Word COM:**
-    - Recalculated the abstract word count using Microsoft Word's official `ComputeStatistics(wdStatisticWords)` method: exactly 292 words ($\le 300$).
+12. **Abstract Word Count:**
+    - The current abstract has 297 whitespace-separated words, below the 300-word maximum using this counting convention. Microsoft Word's own word count has not been independently confirmed in this pass and remains a final check.
 
 13. **Final Consistency, Technical Accuracy, and Document-Quality Pass:**
     - **Exact Test Suite Breakdown (72 automated tests total):**
@@ -110,7 +110,7 @@
       - URL percent-decoding with strict rejection of malformed escapes, NUL bytes (%00), and backslash paths.
       - Canonical root validation with `realpath()` and symlink protections (`O_NOFOLLOW` / `fstat` device/inode validation).
       - Strict RFC 9110/9112 `1*DIGIT` Content-Length grammar (rejecting negative signs, non-digits, and overflow to 413/400).
-      - Strict header parsing rejecting bare CR/LF and header fields exceeding 16 KiB.
+      - Strict header parsing rejecting bare CR/LF; individual names of 128 bytes or more and values of 2,048 bytes or more are rejected with 431. Total header block limit is `max_header_size`: 8,192 bytes when the example config loads, otherwise 16,384 bytes with compiled defaults; more than 64 header fields is also rejected.
       - Full response cleanup preventing heap buffer and file descriptor leaks on error paths.
       - Zero-copy `sendfile(2)` fallback loop with dynamic `lseek(SEEK_CUR)` offset tracking.
       - Signal-safe shutdown notification (`volatile sig_atomic_t`) and prompt termination of idle keep-alive workers (`atomic_bool stop_requested` / `worker_idle_timeout_sec`).
@@ -128,10 +128,17 @@
     - **Benchmark Chronology & Dataset Preservation:**
       - Confirmed primary empirical CSV datasets in `results/raw/` (`experiment_baseline_tuned_comparison.csv` and `experiment_qlaac_tuned_comparison.csv`) were preserved intact.
       - Explicitly documented that Chapter 5 results reflect the original empirical benchmark runs, while subsequent code-audit fixes were verified through the 72 targeted functional and regression tests without re-running heavy multi-client load.
-    - **Final Word COM PDF Export & Static TOC Synchronization:**
-      - Exported native PDF from Microsoft Word COM (`CN_Project_Final_Report.pdf`, 42 pages).
-      - Verified abstract word count via Word COM: exactly 292 words ($\le 300$).
-      - Synchronized all 36 Table of Contents entries in Table 1 against actual PDF pagination.
+    - **Current PDF Export & Static TOC Synchronization:**
+      - Rendered `CN_Project_Final_Report.pdf` from the corrected DOCX using LibreOffice 25.2.3.2; output has 46 pages.
+      - The static TOC entries align with the current generated PDF for the principal chapter and appendix starts. Microsoft Word word count and Word-native PDF pagination remain unverified.
+      - The benchmark launch working directory was not recorded, so the effective configured header-block limit at benchmark time (8,192 or 16,384 bytes) remains unverified; requests in the workload were small GET `/health` requests.
+
+14. **Header-Size, Buffer-Configuration, and URI-Boundary Audit:**
+    - `main.c` initializes configuration defaults and attempts to read `config/server.conf.example` by default (or the `-c`/`--config` path) relative to the working directory. The example file sets `max_header_size = 8192` and `io_buffer_size = 8192`; compiled defaults are 16384. If the file cannot be read, compiled defaults remain active.
+    - `thread_pool.c` passes `config.max_header_size` to the parser; the parser rejects a total header block larger than that limit with 431.
+    - Compile-time field limits are separate: header names of 128 bytes or more and values of 2,048 bytes or more receive 431; no more than 64 fields are accepted. The longest accepted individual name/value lengths are 127/2,047 bytes. `DEFAULT_MAX_HEADER_SZ` in the header is unused by `http_parser.c`.
+    - `http_parser.c` rejects URI lengths of 2,048 bytes or more with 414; the longest accepted URI is 2,047 bytes. Table 4.3 has been corrected to `URI ≤ 2,047 B`.
+    - The Chapter 5 launch working directory is not recorded; the effective total header limit in those runs remains unverified. The workload used small GET `/health` requests, but any claim that this made the limit immaterial is an inference, not recorded evidence.
 
 ---
 
@@ -151,8 +158,8 @@ All values in Chapter 5 and Appendix B match `benchmark/verify_benchmark_statist
 | **64** | QLAAC | 638.12 $\pm$ 126.44 | 19.61 $\pm$ 6.35 | 28.76 $\pm$ 0.59 | 161.18 $\pm$ 159.88 | 16,475.40 $\pm$ 969.70 | 72.14% $\pm$ 5.15% |
 
 **Key Findings Faithfully Preserved:**
-- At $C = 2$, QLAAC exhibits no statistically significant difference from baseline.
-- At $C \ge 8$, QLAAC significantly caps $p99$ tail latency (e.g. at $C = 32$, $16.55$ ms vs $204.00$ ms; at $C = 64$, $161.18$ ms vs $440.33$ ms).
+- At $C = 2$, measured results were similar (p99 0.31 vs 0.33 ms); exploratory tests are interpreted cautiously because trials were sequential and QLAAC controller state may carry over.
+- At $C = 8$ and $C = 32$, the measured trials showed large reductions in successful-response $p99$ latency (3.55 ms vs 29.09 ms and 16.55 ms vs 204.00 ms, respectively). At $C = 64$, p99 fell from 440.33 ms to 161.18 ms on average but varied widely between trials ($161.18 \pm 159.88$ ms); the throughput and rejection trade-offs must be considered.
 - The cost of tail-latency capping is substantial throughput degradation: successful 2xx throughput drops by 67.9% ($C = 8$), 71.3% ($C = 32$), and 90.7% ($C = 64$).
 - At $C = 64$, 72.14% of completed requests are HTTP 503 overload rejections, and $p99$ latency exhibits high sample standard deviation ($159.88$ ms, ~99% of the mean), reflecting cyclic oscillation between OVERLOAD and CAUTION recovery.
 
@@ -162,8 +169,8 @@ All values in Chapter 5 and Appendix B match `benchmark/verify_benchmark_statist
 
 - [x] **Cover Page:** VIT logo intact, title properly formatted, team members listed in ascending registration number order (24BCE0702 Yash Pradhan, 24BCE0714 Anjini Pandey).
 - [x] **Certificate:** Clean academic wording, student names and registration numbers formatted in bold, no placeholders.
-- [x] **Abstract:** 292 words ($\le 300$, verified via Microsoft Word COM `ComputeStatistics(wdStatisticWords)`), cleanly fits on Page 2, verified test count statement (72 tests: 37 C, 35 Python).
-- [x] **Table of Contents:** Spans Pages 4–5, all 36 entries match actual 42-page PDF document pagination.
+- [ ] **Abstract:** 297 whitespace-separated words in the current DOCX (under the 300-word limit by this count); confirm the final count with Microsoft Word. The test count statement is 72 tests: 37 C, 35 Python.
+- [x] **Table of Contents:** Spans Pages 4–5; static numbers checked against the current 46-page LibreOffice PDF. [ ] Recheck after any Microsoft Word export.
 - [x] **Typography & Margins:** Times New Roman body text (12 pt), section headers (14 pt bold), consistent table cell padding, no clipped images or overflowing tables.
 - [x] **Diagrams & Flowcharts:** Figures 3.1, 3.2, 3.3, 5.1, 5.2, 5.3, 5.4, 5.5, B.1, B.2, B.3, B.4 readable and within page boundaries.
 - [x] **Table 4.3:** Source module line counts recalculated from verified final `wc -l` outputs.
@@ -174,7 +181,10 @@ All values in Chapter 5 and Appendix B match `benchmark/verify_benchmark_statist
 
 ---
 
-## 5. Items Requiring Student Confirmation (Optional)
+## 5. Remaining Finalization Checks
 
-The report is fully consistent, rigorous, and submission-ready. The following item is optional if the student wishes to personalize it further:
-- **Curriculum Module Names:** If the student has access to the official VIT BCSE308P syllabus document, they may optionally replace the formal disclaimer in Section 1.5 with the exact syllabus module numbers (e.g., Module 3: Transport Layer, Experiment 5: Socket Programming). The existing text formally explains why general concepts are mapped, making the report completely valid as-is without fabrication.
+- **Microsoft Word abstract count:** Confirm the abstract count directly in Word; the current abstract contains 297 whitespace-separated words, but Word's own count may handle hyphenated terms differently.
+- **Microsoft Word PDF pagination:** The attached PDF was generated from the corrected DOCX with LibreOffice 25.2.3.2 (46 pages). If a Microsoft Word-exported PDF is required, export it from Word and recheck the static TOC against that version before submission.
+- **Benchmark launch directory:** The working directory during Chapter 5 benchmarks was not recorded; therefore, whether `config/server.conf.example` loaded and set the total header limit to 8,192 bytes, rather than the 16,384-byte compiled default, is **UNVERIFIED**. No benchmark results were changed.
+- **URI limit:** Source inspection confirms that URI lengths of 2,048 bytes or more are rejected with 414, so the maximum accepted URI length is 2,047 bytes. Table 4.3 now states `URI ≤ 2,047 B`; the earlier discrepancy is resolved.
+- **Optional curriculum mapping:** If the official BCSE308P syllabus becomes available, the general concept mapping in Section 1.5 can optionally be expanded with official module numbers. No curriculum modules have been invented.

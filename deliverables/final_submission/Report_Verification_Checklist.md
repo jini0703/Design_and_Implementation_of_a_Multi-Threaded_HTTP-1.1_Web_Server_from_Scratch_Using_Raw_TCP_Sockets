@@ -9,7 +9,7 @@
 | Template Requirement | Audit Status | Location in Report | Verification Details |
 |---|---|---|---|
 | **Cover Page** (Title 16 pt bold caps, particulars sorted by Reg. No., B.Tech., CSE, School, VIT logo, October 2026) | **COMPLETE & VERIFIED** | Page 1 | Sorted ascending: (1) 24BCE0702 — YASH PRADHAN, (2) 24BCE0714 — ANJINI PANDEY. Placeholders removed. VIT logo preserved. |
-| **Abstract** (One page, $\le 300$ words) | **COMPLETE & VERIFIED** | Page 2 | Exactly 284 words ($\le 300$). Unchanged text, honest performance trade-offs reported. |
+| **Abstract** (One page, $\le 300$ words) | **COMPLETE & VERIFIED** | Page 2 | Exactly 292 words ($\le 300$, verified via Microsoft Word COM `ComputeStatistics(wdStatisticWords)`). Updated qualification disclosing repeated trials and potential QLAAC state carryover. |
 | **Certificate** (Official VIT template wording) | **COMPLETE & VERIFIED** | Page 3 | Both students and registration numbers listed; placeholders removed; signature line present. |
 | **Table of Contents** (Static numbers matching final pagination) | **COMPLETE & VERIFIED** | Pages 4–5 | All 36 entries verified against native Word COM PDF pagination (40 pages total). Matches 100%. |
 | **1. Introduction** (1.1–1.5) | **COMPLETE & VERIFIED** | Pages 6–8 | Section 1.5 editorial placeholder removed; formally mapped to core Computer Networks concepts. |
@@ -87,6 +87,19 @@
 9. **Table of Contents & Pagination:**
    - Updated static TOC page numbers in Table 1 to match native Microsoft Word COM rendering (40 pages). Every single section heading verified against its exact rendered page in the PDF.
 
+10. **Queue-Wait Formula Dimension Correction (Table 5.4 & Section 5.4):**
+    - Corrected the predicted-wait formula header in Table 5.4 from `rounds × 200 / X (ms)` to `rounds × (200 / X) × 1000 ms`.
+    - Explicitly clarified that because throughput $X$ is measured in requests/second, the round duration $(200 / X)$ evaluates in seconds; multiplying by $1000$ yields milliseconds.
+    - Preserved all calculated values in Table 5.4 (30.2 ms, 204.1 ms, 439.3 ms) and updated Section 5.4 (P[160]) for complete formulation alignment.
+
+11. **Historical Discrepancy Framing for Package README (Appendix B.4 & Section 5.3):**
+    - Clarified in Section 5.3 (P[142]) and Appendix B.4 (P[324], P[325], Table B.4) that the quoted figures describe the pre-audit version of `CLAUDE_PACKAGE_README.md`, which has since been corrected to match empirical CSV data.
+    - Preserved Table B.4 as a historical discrepancy record documenting what was previously stated versus the verified raw CSV data, rather than presenting it as a current error.
+
+12. **Abstract Word Count Recalculation via Microsoft Word COM:**
+    - Recalculated the abstract word count using Microsoft Word's official `ComputeStatistics(wdStatisticWords)` method: exactly 292 words ($\le 300$).
+    - Removed the outdated claim that the abstract was "unchanged", reflecting the updated qualification disclosing repeated trials and potential QLAAC state carryover.
+
 ---
 
 ## 3. Numerical Verification Summary
@@ -116,10 +129,12 @@ All values in Chapter 5 and Appendix B match `benchmark/verify_benchmark_statist
 
 - [x] **Cover Page:** VIT logo intact, title properly formatted, team members listed in ascending registration number order (24BCE0702 Yash Pradhan, 24BCE0714 Anjini Pandey).
 - [x] **Certificate:** Clean academic wording, student names and registration numbers formatted in bold, no placeholders.
-- [x] **Abstract:** 284 words ($\le 300$), cleanly fits on Page 2.
+- [x] **Abstract:** 292 words ($\le 300$, verified via Microsoft Word COM `ComputeStatistics(wdStatisticWords)`), cleanly fits on Page 2.
 - [x] **Table of Contents:** Spans Pages 4–5, all 36 entries match actual 40-page PDF document pagination.
 - [x] **Typography & Margins:** Times New Roman body text (12 pt), section headers (14 pt bold), consistent table cell padding, no clipped images or overflowing tables.
 - [x] **Diagrams & Flowcharts:** Figures 3.1, 3.2, 3.3, 5.1, 5.2, 5.3, 5.4, 5.5, B.1, B.2, B.3, B.4 readable and within page boundaries.
+- [x] **Table 5.4:** Column header displays `Predicted wait = rounds × (200 / X) × 1000 ms`, correctly accounting for throughput in req/s with calculated values preserved (30.2, 204.1, 439.3).
+- [x] **Table B.4:** Accurately framed as a historical discrepancy record of pre-audit package README claims compared with raw CSV files.
 
 ---
 

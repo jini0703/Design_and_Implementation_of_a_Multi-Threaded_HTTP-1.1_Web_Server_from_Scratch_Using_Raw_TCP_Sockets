@@ -103,10 +103,11 @@ void metrics_get_snapshot(MetricsCollector *collector, size_t current_queue_dept
     double temp_latencies[LATENCY_RESERVOIR_SIZE];
     size_t count = 0;
     time_t now = time(NULL);
-    uint64_t now_ns = monotonic_ns();
     uint64_t window_ns = (uint64_t)(LATENCY_WINDOW_SECONDS * (double)NS_PER_SEC);
 
     pthread_mutex_lock(&collector->lock);
+
+    uint64_t now_ns = monotonic_ns();
 
     snapshot->total_connections_accepted = collector->total_connections_accepted;
     snapshot->total_requests_completed = collector->total_requests_completed;
@@ -211,6 +212,7 @@ ssize_t metrics_format_json(const MetricsSnapshot *snapshot, char *buffer, size_
         "  \"p95_latency_ms\": %.2f,\n"
         "  \"p99_latency_ms\": %.2f,\n"
         "  \"avg_latency_ms\": %.2f,\n"
+        "  \"recent_latency_sample_count\": %zu,\n"
         "  \"uptime_seconds\": %ld,\n"
         "  \"snapshot_timestamp\": %ld\n"
         "}\n",
@@ -233,6 +235,7 @@ ssize_t metrics_format_json(const MetricsSnapshot *snapshot, char *buffer, size_
         snapshot->p95_latency_ms,
         snapshot->p99_latency_ms,
         snapshot->avg_latency_ms,
+        snapshot->recent_latency_sample_count,
         (long)(snapshot->snapshot_timestamp - snapshot->server_start_time),
         (long)snapshot->snapshot_timestamp
     );

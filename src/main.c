@@ -14,13 +14,9 @@
 #include "server.h"
 #include "util.h"
 
-static ServerContext *g_server = NULL;
-
 static void sig_handler(int sig) {
     (void)sig;
-    if (g_server) {
-        server_request_shutdown(g_server);
-    }
+    server_signal_request_shutdown();
 }
 
 static void print_banner(void) {
@@ -126,19 +122,18 @@ int main(int argc, char *argv[]) {
     printf("[CONFIG] Metrics Route:       %s\n", config.metrics_route);
     printf("--------------------------------------------------------------------------------\n");
 
-    g_server = server_init(&config);
-    if (!g_server) {
+    ServerContext *server = server_init(&config);
+    if (!server) {
         log_msg(LOG_LEVEL_ERROR, "Fatal error initializing server. Terminating.");
         return EXIT_FAILURE;
     }
 
     log_msg(LOG_LEVEL_INFO, "Server running. Press Ctrl+C to terminate cleanly.");
-    int run_rc = server_run(g_server);
+    int run_rc = server_run(server);
 
     printf("\n");
     log_msg(LOG_LEVEL_INFO, "Cleaning up server resources...");
-    server_destroy(g_server);
-    g_server = NULL;
+    server_destroy(server);
     log_msg(LOG_LEVEL_INFO, "Server shutdown successfully.");
 
     return (run_rc == 0) ? EXIT_SUCCESS : EXIT_FAILURE;

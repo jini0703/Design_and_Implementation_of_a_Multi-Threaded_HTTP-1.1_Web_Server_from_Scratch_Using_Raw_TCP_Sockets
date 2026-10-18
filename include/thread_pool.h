@@ -19,6 +19,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdatomic.h>
 #include <pthread.h>
 #include "connection_queue.h"
 
@@ -35,7 +36,8 @@ typedef struct {
     ServerContext *server_ctx;
     size_t active_workers;
     pthread_mutex_t stats_lock;
-    bool is_running;
+    atomic_bool is_running;
+    atomic_bool stop_requested;
 } ThreadPool;
 
 /**
@@ -62,6 +64,12 @@ size_t thread_pool_get_active_count(ThreadPool *pool);
  * @return Total threads in the pool.
  */
 size_t thread_pool_get_total_count(const ThreadPool *pool);
+
+/**
+ * @brief Request worker threads to stop processing persistent sockets promptly.
+ * @param pool Thread pool.
+ */
+void thread_pool_request_stop(ThreadPool *pool);
 
 /**
  * @brief Initiate shutdown of worker pool and join all spawned threads.

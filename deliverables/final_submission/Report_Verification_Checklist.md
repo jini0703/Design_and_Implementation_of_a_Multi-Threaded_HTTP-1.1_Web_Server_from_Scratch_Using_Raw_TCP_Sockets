@@ -1,6 +1,6 @@
 # Report Verification Checklist — BCSE308P CN Lab Project
 
-**Files:** `CN_Project_Final_Report.docx` (editable, 40 pages), `CN_Project_Final_Report.pdf` (native Microsoft Word COM export of the same DOCX, 40 pages), this checklist.
+**Files:** `CN_Project_Final_Report.docx` (editable, 42 pages), `CN_Project_Final_Report.pdf` (native Microsoft Word COM export of the same DOCX, 42 pages), this checklist.
 
 ---
 
@@ -9,22 +9,22 @@
 | Template Requirement | Audit Status | Location in Report | Verification Details |
 |---|---|---|---|
 | **Cover Page** (Title 16 pt bold caps, particulars sorted by Reg. No., B.Tech., CSE, School, VIT logo, October 2026) | **COMPLETE & VERIFIED** | Page 1 | Sorted ascending: (1) 24BCE0702 — YASH PRADHAN, (2) 24BCE0714 — ANJINI PANDEY. Placeholders removed. VIT logo preserved. |
-| **Abstract** (One page, $\le 300$ words) | **COMPLETE & VERIFIED** | Page 2 | Exactly 292 words ($\le 300$, verified via Microsoft Word COM `ComputeStatistics(wdStatisticWords)`). Updated qualification disclosing repeated trials and potential QLAAC state carryover. |
+| **Abstract** (One page, $\le 300$ words) | **COMPLETE & VERIFIED** | Page 2 | Exactly 292 words ($\le 300$, verified via Microsoft Word COM `ComputeStatistics(wdStatisticWords)`). Updated test statement: 72 automated tests (37 C, 35 Python) pass with a server running. |
 | **Certificate** (Official VIT template wording) | **COMPLETE & VERIFIED** | Page 3 | Both students and registration numbers listed; placeholders removed; signature line present. |
-| **Table of Contents** (Static numbers matching final pagination) | **COMPLETE & VERIFIED** | Pages 4–5 | All 36 entries verified against native Word COM PDF pagination (40 pages total). Matches 100%. |
+| **Table of Contents** (Static numbers matching final pagination) | **COMPLETE & VERIFIED** | Pages 4–5 | All 36 entries verified against native Word COM PDF pagination (42 pages total). Matches 100%. |
 | **1. Introduction** (1.1–1.5) | **COMPLETE & VERIFIED** | Pages 6–8 | Section 1.5 editorial placeholder removed; formally mapped to core Computer Networks concepts. |
 | **2. Literature Survey** (2.1–2.3, template table) | **COMPLETE & VERIFIED** | Pages 9–11 | 6 survey rows; research gap and novelty justification formally framed. |
 | **3. Proposed System** (3.1–3.5, architecture, flowchart, pseudocode) | **COMPLETE & VERIFIED** | Pages 12–16 | Bounded queue (capacity 64) accurately documented; QLAAC 3-state machine and trade-offs explained. |
-| **4. Implementation** (4.1–4.4) | **COMPLETE & VERIFIED** | Pages 17–21 | Table 4.1 updated to clearly distinguish historical benchmark host from local verification platform. |
-| **5. Evaluation** (5.1–5.5, results table, graphs, critical analysis) | **COMPLETE & VERIFIED** | Pages 22–29 | All values match `benchmark/verify_benchmark_statistics.py` directly from raw CSVs (n = 5, sample SD). |
-| **6. Conclusion** (6.1–6.3) | **COMPLETE & VERIFIED** | Pages 30–31 | Honest conclusions: throughput vs tail latency trade-off, QLAAC p95 exclusion of queue wait. |
-| **7. References** (IEEE style) | **COMPLETE & VERIFIED** | Page 32 | All 11 citations verified with complete DOIs, volume, issue, and page numbers. |
-| **Appendix A** (Key code & config listings) | **COMPLETE & VERIFIED** | Pages 33–34 | C excerpts of QLAAC controller, socket timeouts, and config defaults verified against source. |
-| **Appendix B** (Screenshots, authentic test output, raw tables) | **COMPLETE & VERIFIED** | Pages 35–40 | Authentic test execution evidence cited; synthetic image excluded; raw data tables complete. |
+| **4. Implementation** (4.1–4.4) | **COMPLETE & VERIFIED** | Pages 17–23 | Table 4.3 updated to verified `wc -l` source counts; Table 4.4 expanded with confirmed security, framing, and accounting fixes; 72 automated tests verified. |
+| **5. Evaluation** (5.1–5.5, results table, graphs, critical analysis) | **COMPLETE & VERIFIED** | Pages 24–31 | Primary empirical CSV dataset preserved (5 × 10 s, C = 2, 8, 32, 64); benchmark chronology clearly distinguished from subsequent regression tests; historical counter discrepancy qualified. |
+| **6. Conclusion** (6.1–6.3) | **COMPLETE & VERIFIED** | Pages 32–33 | Honest conclusions: throughput vs tail latency trade-off; QLAAC p95 exclusion of queue wait; counter bug marked resolved; genuine limitations (Slowloris) and future work retained. |
+| **7. References** (IEEE style) | **COMPLETE & VERIFIED** | Page 34 | All 11 citations verified with complete DOIs, volume, issue, and page numbers. |
+| **Appendix A** (Key code & config listings) | **COMPLETE & VERIFIED** | Pages 35–36 | Code excerpts verified against exact final source files; A.3 updated to side-effect-free `adaptive_controller_get_state()` worker query and accept-gate shedding. |
+| **Appendix B** (Screenshots, authentic test output, raw tables) | **COMPLETE & VERIFIED** | Pages 37–42 | Execution output documents 37 C unit tests and 35 Python tests (unit and integration suites, 72 total); AddressSanitizer, UBSan, and ThreadSanitizer results verified; raw tables and historical records complete. |
 
 ---
 
-## 2. Issues Corrected in this Audit
+## 2. Issues Corrected Across Project Audits
 
 1. **Team Particulars & Authorship Attribution:**
    - Corrected cover page Table 0:
@@ -64,28 +64,20 @@
 5. **Course-Module Mapping (Section 1.5):**
    - Verified that no official BCSE308P syllabus document is present in the repository.
    - Removed editorial bracket `[Student to add module numbers/titles from the BCSE308P syllabus...]`.
-   - Formally stated that because official curriculum module numbers could not be verified from archived repository files, they were not fabricated. Retained the rigorous mapping in Table 1.1 connecting project components to foundational Computer Networks concepts (TCP byte streams, HTTP/1.1 framing, thread-pool concurrency, bounded queueing dynamics, and empirical evaluation).
+   - Formally stated that because official curriculum module numbers could not be verified from archived repository files, they were not fabricated. Retained the rigorous mapping in Table 1.1 connecting project components to foundational Computer Networks concepts.
 
 6. **Queue Description & Architectural Invariants:**
    - Confirmed that the baseline server queue is strictly a thread-safe bounded circular FIFO with fixed capacity 64 (`connection_queue_capacity = 64`), guarded by a mutex and condition variables. It is nowhere described as unbounded.
 
 7. **Literature & Citations (Section 7):**
-   - Enriched all 11 IEEE citations with complete bibliographic records:
-     - [4] Welsh, Culler, Brewer (SOSP 2001, pp. 230–243, doi: 10.1145/502034.502057)
-     - [5] Welsh and Culler (USITS 2003, pp. 45–60)
-     - [6] Schroeder and Harchol-Balter (ACM TOIT 2006, vol. 6, no. 1, pp. 20–52, doi: 10.1145/1125274.1125276)
-     - [7] Pariag et al. (EuroSys 2007, pp. 231–243, doi: 10.1145/1272996.1273019)
-     - [8] Nichols and Jacobson (ACM Queue 2012, vol. 10, no. 5, pp. 20–34, doi: 10.1145/2208917.2209336)
-     - [9] Gettys and Nichols (ACM Queue 2011, vol. 9, no. 11, pp. 40–54, doi: 10.1145/2063166.2071893)
-     - [10] Dean and Barroso (CACM 2013, vol. 56, no. 2, pp. 74–80, doi: 10.1145/2408776.2408794)
-     - [11] Little (Oper. Res. 1961, vol. 9, no. 3, pp. 383–387, doi: 10.1287/opre.9.3.383)
+   - Enriched all 11 IEEE citations with complete bibliographic records (SOSP 2001, USITS 2003, ACM TOIT 2006, EuroSys 2007, ACM Queue 2011/2012, CACM 2013, Operations Research 1961).
 
 8. **Test Evidence & Visual Integrity:**
    - Acknowledged that `results/screenshots/06_test_results.png` was synthetically generated. Confirmed it is excluded as proof of test execution.
-   - Textual execution summaries cite the authentic test suite run (26/26 C unit tests, 23/23 live Python tests, 49/49 passing).
+   - Verified actual textual execution logs citing authentic test suites.
 
 9. **Table of Contents & Pagination:**
-   - Updated static TOC page numbers in Table 1 to match native Microsoft Word COM rendering (40 pages). Every single section heading verified against its exact rendered page in the PDF.
+   - Updated static TOC page numbers in Table 1 to match native Microsoft Word COM rendering (42 pages). Every single section heading verified against its exact rendered page in the PDF.
 
 10. **Queue-Wait Formula Dimension Correction (Table 5.4 & Section 5.4):**
     - Corrected the predicted-wait formula header in Table 5.4 from `rounds × 200 / X (ms)` to `rounds × (200 / X) × 1000 ms`.
@@ -98,7 +90,48 @@
 
 12. **Abstract Word Count Recalculation via Microsoft Word COM:**
     - Recalculated the abstract word count using Microsoft Word's official `ComputeStatistics(wdStatisticWords)` method: exactly 292 words ($\le 300$).
-    - Removed the outdated claim that the abstract was "unchanged", reflecting the updated qualification disclosing repeated trials and potential QLAAC state carryover.
+
+13. **Final Consistency, Technical Accuracy, and Document-Quality Pass:**
+    - **Exact Test Suite Breakdown (72 automated tests total):**
+      - *C Unit Tests (37 total, `make test`):* Controller: 9, Parser: 14, Queue: 3, Responses: 4, Server Metrics: 7. All 37 executed and passed.
+      - *Python Test Suite (35 total across unit and integration suites):* Benchmark Accounting: 12 (offline unit), Keep-Alive: 6 (2 unit / 4 integration), Malformed Requests: 5 (integration), Security: 12 (integration). All 35 executed and passed against active server daemon on port 8080 (0 failures, 0 skipped). When server is absent, 21 server-dependent integration tests skip gracefully while 14 standalone unit tests pass.
+      - Updated every current-state occurrence in the Abstract, Section 1.2, Section 4.3, Section 6.1, Appendix B.2, and checklist from outdated 49 (26 C, 23 Python) to verified 72 (37 C, 35 Python).
+    - **QLAAC Counter Bug Resolution & Metric Semantics:**
+      - Replaced obsolete snippet and explanation in Appendix A.3: worker threads now query controller state via `adaptive_controller_get_state()` (pure, idempotent, side-effect-free query without state modification or counter increments).
+      - Documented distinct, precise server-side counter semantics:
+        1. `qlaac_shed_requests`: counts QLAAC admission-rejection decisions made by the controller at the accept gate.
+        2. `total_connections_rejected`: counts all connection-rejection paths, combining QLAAC shed decisions and bounded-queue-full drops.
+        3. `total_overload_503_sent`: counts successful server-side writes of HTTP 503 responses across all rejection paths.
+      - Clarified that because queue-full rejections add successful 503 writes without incrementing `qlaac_shed_requests`, while client connections that close or reset before or during the server's HTTP 503 response write prevent `total_overload_503_sent` from incrementing, there is no guaranteed ordering between the QLAAC shed counter and the successful-503-write counter.
+      - Updated Table 4.4, Section 5.5, Section 6.1, Section 6.2, and Section 6.3 to present the bug as resolved rather than an unresolved defect or future work.
+      - Preserved Appendix B.6's observed counter discrepancy (29,783 shed vs 26,978 503s) with explicit qualification that it reflects the pre-fix implementation.
+    - **Confirmed Security & Implementation Fixes (Table 4.4 & Section 4.3):**
+      - Segment-aware path traversal parser (allowing benign filenames like `release..txt`).
+      - URL percent-decoding with strict rejection of malformed escapes, NUL bytes (%00), and backslash paths.
+      - Canonical root validation with `realpath()` and symlink protections (`O_NOFOLLOW` / `fstat` device/inode validation).
+      - Strict RFC 9110/9112 `1*DIGIT` Content-Length grammar (rejecting negative signs, non-digits, and overflow to 413/400).
+      - Strict header parsing rejecting bare CR/LF and header fields exceeding 16 KiB.
+      - Full response cleanup preventing heap buffer and file descriptor leaks on error paths.
+      - Zero-copy `sendfile(2)` fallback loop with dynamic `lseek(SEEK_CUR)` offset tracking.
+      - Signal-safe shutdown notification (`volatile sig_atomic_t`) and prompt termination of idle keep-alive workers (`atomic_bool stop_requested` / `worker_idle_timeout_sec`).
+      - Replaced outdated claim in Section 6.2 that no security audit was performed with precise description of targeted internal audit, while retaining genuine architectural limitations (slow-client/Slowloris starvation).
+    - **Sanitizer & Static Analysis Verification:**
+      - Rebuilt and executed full C unit test suite (5 executables, 37 tests) under AddressSanitizer (ASan) and UndefinedBehaviorSanitizer (UBSan): 37/37 passed, 0 memory errors, 0 leaks, 0 undefined behaviors.
+      - Rebuilt and executed full C unit test suite (5 executables, 37 tests) under ThreadSanitizer (TSan): 37/37 passed, 0 data races (coverage covers unit/subsystem test harnesses; long-running server daemon execution was not instrumented under TSan). Graceful-shutdown behaviour was separately verified by the bounded shutdown integration test (`test_graceful_shutdown_drains_idle_keepalive`), confirming that upon SIGTERM, idle persistent sockets receive an orderly EOF and the daemon process terminates within 1.5 seconds rather than blocking for the 5-second keepalive timeout.
+      - Executed GCC static analysis (`gcc -fanalyzer -std=c17`) across all 12 source files in `src/`: 0 warnings, 0 diagnostic defects.
+    - **Configuration Alignment & Resolution:**
+      - Checked `config/server.conf.example` and restored baseline default `adaptive_control_enabled = false`.
+      - Verified command-line precedence: `./bin/server -p 8089` starts with `qlaac_enabled: false`; `./bin/server -p 8089 -a` overrides to `qlaac_enabled: true`. Verified live via `/metrics` JSON endpoint.
+      - Resolved `worker_idle_timeout_sec`: added field to `ServerConfig`, parsed in `server_config_load_file`, and passed dynamically to `connection_queue_pop` in worker loop.
+    - **Source Line Counts Recalculation (Table 4.3):**
+      - Recalculated from final files: `src/*.c` (3,405 lines across 12 files), `include/*.h` (1,108 lines across 11 files), C unit tests (1,222 lines), Python tests (838 lines). Table 4.3 synchronized.
+    - **Benchmark Chronology & Dataset Preservation:**
+      - Confirmed primary empirical CSV datasets in `results/raw/` (`experiment_baseline_tuned_comparison.csv` and `experiment_qlaac_tuned_comparison.csv`) were preserved intact.
+      - Explicitly documented that Chapter 5 results reflect the original empirical benchmark runs, while subsequent code-audit fixes were verified through the 72 targeted functional and regression tests without re-running heavy multi-client load.
+    - **Final Word COM PDF Export & Static TOC Synchronization:**
+      - Exported native PDF from Microsoft Word COM (`CN_Project_Final_Report.pdf`, 42 pages).
+      - Verified abstract word count via Word COM: exactly 292 words ($\le 300$).
+      - Synchronized all 36 Table of Contents entries in Table 1 against actual PDF pagination.
 
 ---
 
@@ -129,16 +162,19 @@ All values in Chapter 5 and Appendix B match `benchmark/verify_benchmark_statist
 
 - [x] **Cover Page:** VIT logo intact, title properly formatted, team members listed in ascending registration number order (24BCE0702 Yash Pradhan, 24BCE0714 Anjini Pandey).
 - [x] **Certificate:** Clean academic wording, student names and registration numbers formatted in bold, no placeholders.
-- [x] **Abstract:** 292 words ($\le 300$, verified via Microsoft Word COM `ComputeStatistics(wdStatisticWords)`), cleanly fits on Page 2.
-- [x] **Table of Contents:** Spans Pages 4–5, all 36 entries match actual 40-page PDF document pagination.
+- [x] **Abstract:** 292 words ($\le 300$, verified via Microsoft Word COM `ComputeStatistics(wdStatisticWords)`), cleanly fits on Page 2, verified test count statement (72 tests: 37 C, 35 Python).
+- [x] **Table of Contents:** Spans Pages 4–5, all 36 entries match actual 42-page PDF document pagination.
 - [x] **Typography & Margins:** Times New Roman body text (12 pt), section headers (14 pt bold), consistent table cell padding, no clipped images or overflowing tables.
 - [x] **Diagrams & Flowcharts:** Figures 3.1, 3.2, 3.3, 5.1, 5.2, 5.3, 5.4, 5.5, B.1, B.2, B.3, B.4 readable and within page boundaries.
+- [x] **Table 4.3:** Source module line counts recalculated from verified final `wc -l` outputs.
+- [x] **Table 4.4:** Challenges and solutions table expanded with confirmed security, HTTP framing, sendfile offset fallback, and QLAAC counter reconciliation evidence.
 - [x] **Table 5.4:** Column header displays `Predicted wait = rounds × (200 / X) × 1000 ms`, correctly accounting for throughput in req/s with calculated values preserved (30.2, 204.1, 439.3).
 - [x] **Table B.4:** Accurately framed as a historical discrepancy record of pre-audit package README claims compared with raw CSV files.
+- [x] **Appendix A & B:** Cleanly formatted without clipped code excerpts or broken tables; A.3 updated to side-effect-free state query; Appendix B.2 contains verified 37 C / 35 Python test execution logs.
 
 ---
 
 ## 5. Items Requiring Student Confirmation (Optional)
 
-The report is fully consistent, rigorous, and ready for submission. The following item is optional if the student wishes to personalize it further:
+The report is fully consistent, rigorous, and submission-ready. The following item is optional if the student wishes to personalize it further:
 - **Curriculum Module Names:** If the student has access to the official VIT BCSE308P syllabus document, they may optionally replace the formal disclaimer in Section 1.5 with the exact syllabus module numbers (e.g., Module 3: Transport Layer, Experiment 5: Socket Programming). The existing text formally explains why general concepts are mapped, making the report completely valid as-is without fabrication.

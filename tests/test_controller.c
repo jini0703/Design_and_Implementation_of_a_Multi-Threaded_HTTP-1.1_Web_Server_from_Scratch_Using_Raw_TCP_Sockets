@@ -266,6 +266,89 @@ static void test_qlaac_disabled_policy(void) {
     printf("[PASS] test_qlaac_disabled_policy\n");
 }
 
+static void test_qlaac_get_state_no_side_effects(void) {
+    QlaacController c;
+    QlaacConfig cfg = {
+        .enabled = true,
+        .queue_caution_threshold = 0.70,
+        .queue_overload_threshold = 0.90,
+        .latency_caution_ms = 50.0,
+        .latency_overload_ms = 150.0,
+        .worker_caution_threshold = 0.85,
+        .worker_overload_threshold = 1.00,
+        .recovery_samples_required = 3,
+        .sustained_pressure_threshold = 3
+    };
+
+    adaptive_controller_init(&c, &cfg);
+    assert(adaptive_controller_get_state(&c) == QLAAC_STATE_NORMAL);
+
+    /* Trigger OVERLOAD state */
+    QlaacState st = adaptive_controller_update_ex(&c, 0.95, 1.00, 200.0);
+    assert(st == QLAAC_STATE_OVERLOAD);
+
+    /* Querying state must return OVERLOAD without incrementing total_shed_requests */
+    for (int i = 0; i < 10; i++) {
+        assert(adaptive_controller_get_state(&c) == QLAAC_STATE_OVERLOAD);
+    }
+    assert(c.total_shed_requests == 0);
+
+    /* Admission evaluate call DOES increment total_shed_requests */
+    assert(adaptive_controller_evaluate(&c) == QLAAC_ACTION_REJECT_OVERLOAD);
+    assert(c.total_shed_requests == 1);
+
+    /* Subsequent get_state queries still do not increment shed counter */
+    for (int i = 0; i < 5; i++) {
+        assert(adaptive_controller_get_state(&c) == QLAAC_STATE_OVERLOAD);
+    }
+    assert(c.total_shed_requests == 1);
+
+    adaptive_controller_destroy(&c);
+    printf("[PASS] test_qlaac_get_state_no_side_effects\n");
+}
+
+static void test_qlaac_get_snapshot_thread_safety(void) {
+    QlaacController c;
+    QlaacConfig cfg = {
+        .enabled = true,
+        .queue_caution_threshold = 0.70,
+        .queue_overload_threshold = 0.90,
+        .latency_caution_ms = 50.0,
+        .latency_overload_ms = 150.0,
+        .worker_caution_threshold = 0.85,
+        .worker_overload_threshold = 1.00,
+        .recovery_samples_required = 3,
+        .sustained_pressure_threshold = 3
+    };
+
+    adaptive_controller_init(&c, &cfg);
+
+    /* Initial snapshot check */
+    QlaacState s;
+    uint64_t trans, shed;
+    adaptive_controller_get_snapshot(&c, &s, &trans, &shed);
+    assert(s == QLAAC_STATE_NORMAL);
+    assert(trans == 0);
+    assert(shed == 0);
+
+    /* Safe handling of NULL pointers */
+    adaptive_controller_get_snapshot(&c, NULL, NULL, NULL);
+
+    /* Trigger OVERLOAD */
+    adaptive_controller_update_ex(&c, 0.95, 1.00, 200.0);
+    adaptive_controller_evaluate(&c); /* Increments shed counter */
+
+    for (int i = 0; i < 10; i++) {
+        adaptive_controller_get_snapshot(&c, &s, &trans, &shed);
+        assert(s == QLAAC_STATE_OVERLOAD);
+        assert(trans == 1);
+        assert(shed == 1);
+    }
+
+    adaptive_controller_destroy(&c);
+    printf("[PASS] test_qlaac_get_snapshot_thread_safety\n");
+}
+
 int main(void) {
     printf("--- Running QLAAC Controller Unit Tests ---\n");
     test_qlaac_worker_saturation_empty_queue();
@@ -275,6 +358,8 @@ int main(void) {
     test_qlaac_recovery();
     test_qlaac_hysteresis_reset();
     test_qlaac_disabled_policy();
+    test_qlaac_get_state_no_side_effects();
+    test_qlaac_get_snapshot_thread_safety();
     printf("--- All QLAAC Controller Tests Passed ---\n");
     return EXIT_SUCCESS;
 }

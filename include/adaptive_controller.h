@@ -109,6 +109,25 @@ QlaacState adaptive_controller_update_ex(QlaacController *controller,
 QlaacDecision adaptive_controller_evaluate(QlaacController *controller);
 
 /**
+ * @brief Thread-safe query of current QLAAC state without side effects (does not increment shed counter).
+ * @param controller Controller struct.
+ * @return Current QlaacState (NORMAL, CAUTION, or OVERLOAD).
+ */
+QlaacState adaptive_controller_get_state(QlaacController *controller);
+
+/**
+ * @brief Thread-safe snapshot of controller state and counters without mutating state.
+ * @param controller Controller struct.
+ * @param state_out Optional destination for current state.
+ * @param overload_transitions_out Optional destination for total overload transitions.
+ * @param shed_requests_out Optional destination for total shed requests.
+ */
+void adaptive_controller_get_snapshot(QlaacController *controller,
+                                      QlaacState *state_out,
+                                      uint64_t *overload_transitions_out,
+                                      uint64_t *shed_requests_out);
+
+/**
  * @brief Convert a QlaacState enum to human-readable string.
  * @param state QLAAC state enum.
  * @return String constant ("NORMAL", "CAUTION", "OVERLOAD").

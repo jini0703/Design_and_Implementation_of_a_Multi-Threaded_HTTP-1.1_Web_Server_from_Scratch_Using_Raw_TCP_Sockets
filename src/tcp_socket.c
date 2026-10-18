@@ -376,10 +376,13 @@ int tcp_sendfile_all(int sock_fd, int file_fd, size_t count, uint64_t deadline_n
     }
 
     size_t remaining = count;
+    off_t offset = lseek(file_fd, 0, SEEK_CUR);
+    if (offset == (off_t)-1) {
+        offset = 0;
+    }
 
 #if defined(__linux__)
     if (use_sendfile) {
-        off_t offset = 0;
         while (remaining > 0) {
             size_t chunk = remaining > (1024 * 1024) ? (1024 * 1024) : remaining;
             ssize_t n = sendfile(sock_fd, file_fd, &offset, chunk);
@@ -414,7 +417,10 @@ int tcp_sendfile_all(int sock_fd, int file_fd, size_t count, uint64_t deadline_n
     (void)use_sendfile;
 #endif
 
-    /* Userspace buffer fallback loop */
+    /* Userspace buffer fallback loop: synchronize file descriptor offset to position reached */
+    if (lseek(file_fd, offset, SEEK_SET) == (off_t)-1) {
+        return TCP_ERR_IO;
+    }
     char buf[16384];
     while (remaining > 0) {
         size_t to_read = remaining < sizeof(buf) ? remaining : sizeof(buf);

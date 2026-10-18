@@ -1,10 +1,10 @@
 # Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server from Scratch Using Raw TCP Sockets
 
-[![Language](https://img.shields.io/badge/Language-C17%20%2F%20ISO%209899%3A2018-00599C?logo=c)](file:///C:/Users/ANJINI%20PANDEY/.gemini/antigravity-ide/scratch/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets/src)
-[![Platform](https://img.shields.io/badge/Platform-POSIX.1--2008%20%2F%20Linux%20x86__64-FCC624?logo=linux&logoColor=black)](file:///C:/Users/ANJINI%20PANDEY/.gemini/antigravity-ide/scratch/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets)
+[![Language](https://img.shields.io/badge/Language-C17%20%2F%20ISO%209899%3A2018-00599C?logo=c)](src/)
+[![Platform](https://img.shields.io/badge/Platform-POSIX.1--2008%20%2F%20Linux%20x86__64-FCC624?logo=linux&logoColor=black)](./)
 [![RFC Compliance](https://img.shields.io/badge/RFC-9112%20%7C%209110-blue)](https://www.rfc-editor.org/rfc/rfc9112.html)
-[![Verification](https://img.shields.io/badge/Tests-49%2F49%20Passing%20(100%25)-success)](file:///C:/Users/ANJINI%20PANDEY/.gemini/antigravity-ide/scratch/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets/results/test_evidence/test_run_summary.txt)
-[![Course](https://img.shields.io/badge/Course-BCSE308P%20Computer%20Networks-red)](file:///C:/Users/ANJINI%20PANDEY/.gemini/antigravity-ide/scratch/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets/deliverables/report/HTTP11_Web_Server_Project_Report.pdf)
+[![Verification](https://img.shields.io/badge/Tests-72%2F72%20Passing%20(100%25)-success)](deliverables/final_submission/Report_Verification_Checklist.md)
+[![Course](https://img.shields.io/badge/Course-BCSE308P%20Computer%20Networks-red)](deliverables/final_submission/CN_Project_Final_Report.pdf)
 
 A high-performance, zero-dependency academic systems implementation of an RFC 9112 compliant **HTTP/1.1 Web Server built strictly from scratch** using low-level POSIX TCP Berkeley sockets (`AF_INET`, `SOCK_STREAM`) and POSIX threads (`pthreads`).
 
@@ -69,7 +69,7 @@ This project demystifies transport and application layer interaction by engineer
 - **Real-Time Observability Engine:** In-memory lock-free reservoir sampling computing sliding-window RPS and rolling latency percentiles ($p50, p95, p99$).
 - **Live HTML5 Telemetry Dashboard:** Integrated single-page web dashboard displaying live cards, Canvas throughput/latency histories, and an interactive diagnostic console.
 - **Queue-and-Latency-Aware Admission Control (QLAAC):** 3-state adaptive controller (`NORMAL`, `CAUTION`, `OVERLOAD`) with hysteresis dampening.
-- **Complete Test Harness:** 49 passing test suites (26 C17 unit tests, 23 Python RFC & security integration tests).
+- **Complete Test Harness:** 72 passing test cases (37 C17 unit tests across 5 executables, and 35 Python RFC, security, and accounting tests; 100% passing against a running server).
 
 ---
 
@@ -351,7 +351,7 @@ pkill -INT server
 │   │   ├── 03_post_echo.png            # POST /api/echo body framing & response
 │   │   ├── 04_live_metrics.png         # Dynamic RPS spike & chart updates under load
 │   │   ├── 05_qlaac_load_test.png      # QLAAC state, dynamic signals & invariants
-│   │   └── 06_test_results.png         # Genuine terminal test output (49/49 passed)
+│   │   └── 06_test_results.png         # Terminal test output from baseline run (49/49 passed; 72 in current suite)
 │   └── test_evidence/             # Test execution summaries
 │       └── test_run_summary.txt   # Verified pass/fail execution log of all test suites
 │
@@ -361,9 +361,13 @@ pkill -INT server
 │   └── generate_plots.py          # Visualization script producing publication-ready figures
 │
 └── deliverables/                  # Academic course deliverables
+    ├── final_submission/          # Canonical final project submission
+    │   ├── CN_Project_Final_Report.pdf  # Canonical 42-page final project report
+    │   ├── CN_Project_Final_Report.docx # Formatted source document
+    │   └── Report_Verification_Checklist.md # Comprehensive verification checklist
     ├── claude_report_package.zip  # Validated archive package for faculty report generation
-    ├── report/                    # Final academic technical report
-    │   ├── HTTP11_Web_Server_Project_Report.pdf  # Compiled 13-page PDF report
+    ├── report/                    # Preliminary academic technical report
+    │   ├── HTTP11_Web_Server_Project_Report.pdf  # Preliminary 13-page PDF report
     │   ├── HTTP11_Web_Server_Project_Report.md   # Editable source Markdown
     │   ├── generate_report.py                    # Build generator script
     │   └── README.md                             # Report verification notes
@@ -389,28 +393,28 @@ make test
 python3 -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-### Verified Test Results (49 / 49 Passing — 100% Pass Rate)
+### Verified Test Results (72 / 72 Passing — 100% Pass Rate with Running Server)
 
 ```text
 ================================================================================
 HTTP/1.1 Web Server - Verification Summary
 ================================================================================
 1. C17 Unit Tests (make test):
-   - bin/test_controller        : [PASS] 7/7  (State transitions, hysteresis reset, sustained pressure)
-   - bin/test_parser            : [PASS] 9/9  (RFC 9112 tokens, case-insensitivity, framing, Host validation)
-   - bin/test_queue             : [PASS] 3/3  (FIFO push/pop, 64-capacity boundary, thread-pool shutdown)
-   - bin/test_responses         : [PASS] 2/2  (RFC status phrases, date/server headers)
-   - bin/test_server_metrics    : [PASS] 5/5  (Lifetime counters, 503 isolation, bounded latency window)
-   Subtotal: 26 passed, 0 failed
+   - bin/test_controller        : [PASS] 9/9   (State transitions, hysteresis reset, sustained pressure, side-effect-free state query)
+   - bin/test_parser            : [PASS] 14/14 (RFC 9112 tokens, case-insensitivity, framing, Host, query parsing, bare LF, signed length)
+   - bin/test_queue             : [PASS] 3/3   (FIFO push/pop, 64-capacity boundary, thread-pool shutdown)
+   - bin/test_responses         : [PASS] 4/4   (RFC status phrases, date/server headers, error cleanup, sendfile fallback offset integrity)
+   - bin/test_server_metrics    : [PASS] 7/7   (Lifetime counters, 503 isolation, failed overload write exclusion, bounded latency window)
+   Subtotal: 37 passed, 0 failed
 
-2. Python Protocol & Accounting Tests (python3 -m unittest):
-   - test_benchmark_accounting  : [PASS] 11/11 (Strict 2xx throughput isolation, 503 classified as 5xx)
-   - test_keepalive             : [PASS] 3/3   (Persistent connections, Connection: close semantics)
-   - test_malformed_requests    : [PASS] 5/5   (RFC 9112 syntax violations, random byte fuzzing)
-   - test_security              : [PASS] 4/4   (Path traversal prevention, %2e%2e encoding blocks)
-   Subtotal: 23 passed, 0 failed
+2. Python Protocol, Accounting & Security Tests (python3 -m unittest):
+   - test_benchmark_accounting  : [PASS] 12/12 (Strict 2xx throughput isolation, 503 classified as 5xx, framing & leftover preservation)
+   - test_keepalive             : [PASS] 6/6   (Persistent connections, Connection: close semantics, query routing, bounded shutdown < 1.5s)
+   - test_malformed_requests    : [PASS] 5/5   (RFC 9112 syntax violations, random byte fuzzing, chunked 501, 100-continue 417)
+   - test_security              : [PASS] 12/12 (Path traversal prevention, %2e%2e encoding blocks, symlink sandboxing, NUL byte %00)
+   Subtotal: 35 passed, 0 failed (with server running; 14 passed / 21 skipped standalone without server)
 
-Total Test Execution: 49 / 49 Tests Passed (100% Success Rate, 0 Failures)
+Total Test Execution: 72 / 72 Tests Passed (100% Success Rate against active server)
 ================================================================================
 ```
 
@@ -461,7 +465,7 @@ Authentic screenshots captured directly from the running C17 server instance at 
 3. **[`03_post_echo.png`](results/screenshots/03_post_echo.png)**: Live Interactive API Console execution of `POST /api/echo` demonstrating RFC 9112 Content-Length body framing and exact text payload echo.
 4. **[`04_live_metrics.png`](results/screenshots/04_live_metrics.png)**: Live metrics updating dynamically under a 120-request burst, showing real-time RPS spike (~46 RPS) and active latency chart recovery.
 5. **[`05_qlaac_load_test.png`](results/screenshots/05_qlaac_load_test.png)**: QLAAC controller telemetry grid showing active state (`NORMAL`), dynamic threshold signal meters, and documented transition invariants.
-6. **[`06_test_results.png`](results/screenshots/06_test_results.png)**: Genuine terminal output showing all 49 C and Python unit and protocol tests passing with 100% success rate.
+6. **[`06_test_results.png`](results/screenshots/06_test_results.png)**: Genuine terminal output from baseline test execution showing the initial 49 C and Python unit and protocol tests passing (suite expanded to 72 automated tests in current implementation).
 
 *Detailed Capture Documentation:* [`results/screenshots/README.md`](results/screenshots/README.md)
 
@@ -471,8 +475,11 @@ Authentic screenshots captured directly from the running C17 server instance at 
 
 All course deliverables are tracked in [`deliverables/`](deliverables/):
 
-- **Comprehensive PDF Technical Report:** [`deliverables/report/HTTP11_Web_Server_Project_Report.pdf`](deliverables/report/HTTP11_Web_Server_Project_Report.pdf) (13 pages, 1.92 MB, IEEE/ACM format, 6 embedded figures, 21 structured sections, full empirical tables).
-- **Source Markdown Report:** [`deliverables/report/HTTP11_Web_Server_Project_Report.md`](deliverables/report/HTTP11_Web_Server_Project_Report.md).
+- **Canonical Final Technical Report (PDF):** [`deliverables/final_submission/CN_Project_Final_Report.pdf`](deliverables/final_submission/CN_Project_Final_Report.pdf) (42 pages, verified IEEE/ACM format, complete empirical tables, 72-test validation, and reconciled QLAAC telemetry semantics).
+- **Canonical Final Report Source (DOCX):** [`deliverables/final_submission/CN_Project_Final_Report.docx`](deliverables/final_submission/CN_Project_Final_Report.docx).
+- **Report Verification Checklist:** [`deliverables/final_submission/Report_Verification_Checklist.md`](deliverables/final_submission/Report_Verification_Checklist.md).
+- **Preliminary Technical Report (Historical):** [`deliverables/report/HTTP11_Web_Server_Project_Report.pdf`](deliverables/report/HTTP11_Web_Server_Project_Report.pdf) (13 pages, early submission draft).
+- **Preliminary Source Markdown Report:** [`deliverables/report/HTTP11_Web_Server_Project_Report.md`](deliverables/report/HTTP11_Web_Server_Project_Report.md).
 - **Academic Slide Deck:** [`deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx`](deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx) (18 slides, 16:9 widescreen, custom dark palette, embedded benchmark plots, and speaker notes).
 - **Claude Report Package ZIP:** [`deliverables/claude_report_package.zip`](deliverables/claude_report_package.zip) (Self-contained archive for faculty report generation).
 - **Package Orientation Guide:** [`CLAUDE_PACKAGE_README.md`](CLAUDE_PACKAGE_README.md).

@@ -29,8 +29,24 @@ int router_dispatch(ServerContext *ctx, const HttpRequest *req, HttpResponse *re
         return 0;
     }
 
+    /* Use URL path component (excluding query string) for route matching */
+    const char *path = req->path;
+    char path_buf[HTTP_MAX_URI_LENGTH];
+    if (path[0] == '\0' && req->uri[0] != '\0') {
+        const char *qmark = strchr(req->uri, '?');
+        if (qmark) {
+            size_t plen = (size_t)(qmark - req->uri);
+            if (plen >= sizeof(path_buf)) plen = sizeof(path_buf) - 1;
+            memcpy(path_buf, req->uri, plen);
+            path_buf[plen] = '\0';
+            path = path_buf;
+        } else {
+            path = req->uri;
+        }
+    }
+
     /* 1. Liveness / Readiness Health Check Endpoint */
-    if (strcmp(req->uri, "/health") == 0 || strcmp(req->uri, "/status") == 0) {
+    if (strcmp(path, "/health") == 0 || strcmp(path, "/status") == 0) {
         if (req->method != HTTP_METHOD_GET && req->method != HTTP_METHOD_HEAD) {
             http_response_build_error(res, HTTP_STATUS_METHOD_NOT_ALLOWED,
                                       "Only GET and HEAD are permitted on /health.", res->is_keep_alive);
@@ -50,7 +66,7 @@ int router_dispatch(ServerContext *ctx, const HttpRequest *req, HttpResponse *re
 
     /* 2. Runtime Metrics Observability Endpoint */
     const char *metrics_route = (ctx->config.metrics_route[0] != '\0') ? ctx->config.metrics_route : "/metrics";
-    if (strcmp(req->uri, metrics_route) == 0 || strcmp(req->uri, "/metrics") == 0) {
+    if (strcmp(path, metrics_route) == 0 || strcmp(path, "/metrics") == 0) {
         if (!ctx->config.metrics_enabled) {
             http_response_build_error(res, HTTP_STATUS_NOT_FOUND,
                                       "Metrics endpoint is disabled.", res->is_keep_alive);
@@ -68,7 +84,11 @@ int router_dispatch(ServerContext *ctx, const HttpRequest *req, HttpResponse *re
         MetricsSnapshot snap;
         metrics_get_snapshot(&ctx->metrics, q_depth, active_w, total_w, &snap);
 
-        const char *qlaac_state_str = adaptive_controller_state_name(ctx->controller.current_state);
+        QlaacState qstate = QLAAC_STATE_NORMAL;
+        uint64_t qlaac_trans = 0;
+        uint64_t qlaac_shed = 0;
+        adaptive_controller_get_snapshot(&ctx->controller, &qstate, &qlaac_trans, &qlaac_shed);
+        const char *qlaac_state_str = adaptive_controller_state_name(qstate);
 
         char json_buf[4096];
         int written = snprintf(json_buf, sizeof(json_buf),
@@ -125,8 +145,8 @@ int router_dispatch(ServerContext *ctx, const HttpRequest *req, HttpResponse *re
             snap.recent_latency_sample_count,
             ctx->config.adaptive_control_enabled ? "true" : "false",
             qlaac_state_str,
-            (unsigned long long)ctx->controller.total_overload_transitions,
-            (unsigned long long)ctx->controller.total_shed_requests,
+            (unsigned long long)qlaac_trans,
+            (unsigned long long)qlaac_shed,
             ctx->config.connection_queue_capacity,
             (long)(snap.snapshot_timestamp - snap.server_start_time),
             (long)snap.snapshot_timestamp
@@ -143,7 +163,7 @@ int router_dispatch(ServerContext *ctx, const HttpRequest *req, HttpResponse *re
     }
 
     /* 3. Echo API Endpoint (POST Body Echo) */
-    if (strncmp(req->uri, "/api/echo", 9) == 0 && (req->uri[9] == '\0' || req->uri[9] == '?' || req->uri[9] == '/')) {
+    if (strncmp(path, "/api/echo", 9) == 0 && (path[9] == '\0' || path[9] == '/')) {
         if (req->method != HTTP_METHOD_POST) {
             http_response_build_error(res, HTTP_STATUS_METHOD_NOT_ALLOWED,
                                       "POST is required for /api/echo.", res->is_keep_alive);
@@ -171,5 +191,5 @@ int router_dispatch(ServerContext *ctx, const HttpRequest *req, HttpResponse *re
         return 0;
     }
 
-    return static_files_serve(ctx->config.public_root, req->uri, res);
+    return static_files_serve(ctx->config.public_root, path, res);
 }

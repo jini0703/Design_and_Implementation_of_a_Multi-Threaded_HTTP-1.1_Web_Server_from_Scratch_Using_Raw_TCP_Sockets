@@ -205,6 +205,36 @@ QlaacDecision adaptive_controller_evaluate(QlaacController *controller) {
     return decision;
 }
 
+QlaacState adaptive_controller_get_state(QlaacController *controller) {
+    if (!controller || !controller->config.enabled) {
+        return QLAAC_STATE_NORMAL;
+    }
+
+    pthread_mutex_lock(&controller->lock);
+    QlaacState state = controller->current_state;
+    pthread_mutex_unlock(&controller->lock);
+
+    return state;
+}
+
+void adaptive_controller_get_snapshot(QlaacController *controller,
+                                      QlaacState *state_out,
+                                      uint64_t *overload_transitions_out,
+                                      uint64_t *shed_requests_out) {
+    if (!controller) {
+        if (state_out) *state_out = QLAAC_STATE_NORMAL;
+        if (overload_transitions_out) *overload_transitions_out = 0;
+        if (shed_requests_out) *shed_requests_out = 0;
+        return;
+    }
+
+    pthread_mutex_lock(&controller->lock);
+    if (state_out) *state_out = controller->current_state;
+    if (overload_transitions_out) *overload_transitions_out = controller->total_overload_transitions;
+    if (shed_requests_out) *shed_requests_out = controller->total_shed_requests;
+    pthread_mutex_unlock(&controller->lock);
+}
+
 void adaptive_controller_destroy(QlaacController *controller) {
     if (!controller) return;
     pthread_mutex_destroy(&controller->lock);

@@ -236,16 +236,35 @@ ParserStatus http_parse_request(const char *raw_data, size_t length,
     snprintf(req->uri, sizeof(req->uri), "%s", uri_token);
 
     /* Split URI into path and query string */
-    const char *qmark = strchr(uri_token, '?');
-    if (qmark) {
-        size_t path_len = (size_t)(qmark - uri_token);
-        if (path_len >= sizeof(req->path)) path_len = sizeof(req->path) - 1;
-        memcpy(req->path, uri_token, path_len);
-        req->path[path_len] = '\0';
-        snprintf(req->query, sizeof(req->query), "%s", qmark + 1);
-    } else {
-        snprintf(req->path, sizeof(req->path), "%s", uri_token);
-        req->query[0] = '\0';
+    const char *target = uri_token;
+    if (strncmp(target, "http://", 7) == 0) {
+        const char *slash = strchr(target + 7, '/');
+        const char *q = strchr(target + 7, '?');
+        if (slash && (!q || slash < q)) {
+            target = slash;
+        } else if (q) {
+            snprintf(req->path, sizeof(req->path), "/");
+            snprintf(req->query, sizeof(req->query), "%s", q + 1);
+            target = NULL;
+        } else {
+            snprintf(req->path, sizeof(req->path), "/");
+            req->query[0] = '\0';
+            target = NULL;
+        }
+    }
+
+    if (target) {
+        const char *qmark = strchr(target, '?');
+        if (qmark) {
+            size_t path_len = (size_t)(qmark - target);
+            if (path_len >= sizeof(req->path)) path_len = sizeof(req->path) - 1;
+            memcpy(req->path, target, path_len);
+            req->path[path_len] = '\0';
+            snprintf(req->query, sizeof(req->query), "%s", qmark + 1);
+        } else {
+            snprintf(req->path, sizeof(req->path), "%s", target);
+            req->query[0] = '\0';
+        }
     }
 
     /* Validate & assign Version */
@@ -282,6 +301,12 @@ ParserStatus http_parse_request(const char *raw_data, size_t length,
         char *line = cursor;
         cursor = next_crlf + 2;
 
+        /* Reject bare CR or LF characters within the header line per RFC 9112 §5.2 */
+        if (strpbrk(line, "\r\n") != NULL) {
+            free(hdr_buf);
+            return PARSER_ERR_BAD_REQUEST;
+        }
+
         /* Check for whitespace before colon (prohibited by RFC 9112 §5.1) */
         char *colon = strchr(line, ':');
         if (!colon || colon == line) {
@@ -305,6 +330,12 @@ ParserStatus http_parse_request(const char *raw_data, size_t length,
                 free(hdr_buf);
                 return PARSER_ERR_BAD_REQUEST;
             }
+        }
+
+        /* Reject individual headers exceeding designated buffer limits per RFC 9112 §5.1 */
+        if (strlen(hname) >= HTTP_MAX_HEADER_NAME || strlen(hval) >= HTTP_MAX_HEADER_VALUE) {
+            free(hdr_buf);
+            return PARSER_ERR_HEADERS_TOO_LARGE;
         }
 
         if (req->header_count >= HTTP_MAX_HEADERS) {
@@ -338,16 +369,29 @@ ParserStatus http_parse_request(const char *raw_data, size_t length,
             cl_found = true;
             req->has_content_length = true;
 
-            char *endptr = NULL;
-            errno = 0;
-            long long val = strtoll(hval, &endptr, 10);
-            if (errno != 0 || endptr == hval || *endptr != '\0' || val < 0) {
+            if (hval[0] == '\0') {
                 free(hdr_buf);
                 return PARSER_ERR_BAD_REQUEST;
             }
-            if ((size_t)val > max_body_size) {
+
+            /* Every character must conform strictly to RFC 9110 §8.6 1*DIGIT grammar */
+            for (const char *p = hval; *p != '\0'; p++) {
+                if (!isdigit((unsigned char)*p)) {
+                    free(hdr_buf);
+                    return PARSER_ERR_BAD_REQUEST;
+                }
+            }
+
+            char *endptr = NULL;
+            errno = 0;
+            unsigned long long val = strtoull(hval, &endptr, 10);
+            if (errno == ERANGE || val > (unsigned long long)max_body_size) {
                 free(hdr_buf);
                 return PARSER_ERR_BODY_TOO_LARGE;
+            }
+            if (endptr == hval || *endptr != '\0') {
+                free(hdr_buf);
+                return PARSER_ERR_BAD_REQUEST;
             }
             req->content_length = (int64_t)val;
         } else if (strcasecmp(hname, "Transfer-Encoding") == 0) {

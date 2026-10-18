@@ -153,6 +153,7 @@ void http_response_set_file(HttpResponse *res, const char *content_type, int fil
 void http_response_build_error(HttpResponse *res, HttpStatus status, const char *custom_message, bool keep_alive)
 {
     if (!res) return;
+    http_response_destroy(res);
     http_response_init(res);
     res->status = status;
     res->is_keep_alive = keep_alive;

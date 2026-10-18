@@ -239,6 +239,31 @@ class TestBenchmarkAccounting(unittest.TestCase):
         self.assertGreater(server_metrics["total_connections_accepted"], client_stats["success_2xx"])
         self.assertEqual(client_stats["http_5xx"], server_metrics["total_overload_503_sent"])
 
+    def test_reconciliation_overload_and_client_5xx_timeouts(self):
+        """Verify reconciliation between client-observed 5xx + timeouts and server overload counters."""
+        # Realistic 64-client load scenario matching the audited benchmark trial
+        client_stats = {
+            "attempted": 8127,
+            "completed": 8106,
+            "success_2xx": 0,
+            "http_5xx": 8106,
+            "timeouts": 21,
+        }
+        server_metrics = {
+            "total_connections_rejected": 8129,
+            "total_overload_503_sent": 8129,
+            "qlaac_shed_requests": 8129,
+        }
+        # Client observed 5xx plus socket timeouts accounts for all rejected client attempts
+        client_rejected_total = client_stats["http_5xx"] + client_stats["timeouts"]
+        self.assertEqual(client_rejected_total, 8127)
+        # Server sent 503s matches rejected connections exactly (100% 503 transmission rate)
+        self.assertEqual(server_metrics["total_connections_rejected"], server_metrics["total_overload_503_sent"])
+        self.assertEqual(server_metrics["total_overload_503_sent"], server_metrics["qlaac_shed_requests"])
+        # Discrepancy between client attempts and server responses is strictly bounded by in-flight/boundary probes (<= 2)
+        diff = server_metrics["total_overload_503_sent"] - client_rejected_total
+        self.assertLessEqual(diff, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

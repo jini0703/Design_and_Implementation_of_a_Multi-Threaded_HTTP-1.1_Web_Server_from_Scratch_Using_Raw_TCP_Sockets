@@ -15,6 +15,7 @@
 #include <ctype.h>
 #include <poll.h>
 #include <unistd.h>
+#include <signal.h>
 
 static char *trim_whitespace(char *str) {
     if (!str) return NULL;
@@ -36,6 +37,7 @@ void server_config_init_defaults(ServerConfig *config) {
     config->socket_snd_timeout_sec = 5;
     config->worker_threads = 4;
     config->connection_queue_capacity = 64;
+    config->worker_idle_timeout_sec = 2;
     config->keepalive_max_requests = 100;
     config->keepalive_timeout_sec = 5;
     config->max_header_size = 16384;
@@ -96,6 +98,8 @@ int server_config_load_file(ServerConfig *config, const char *filepath) {
             config->worker_threads = (size_t)atoi(val);
         } else if (strcasecmp(key, "connection_queue_capacity") == 0) {
             config->connection_queue_capacity = (size_t)atoi(val);
+        } else if (strcasecmp(key, "worker_idle_timeout_sec") == 0) {
+            config->worker_idle_timeout_sec = atoi(val);
         } else if (strcasecmp(key, "keepalive_max_requests") == 0) {
             config->keepalive_max_requests = atoi(val);
         } else if (strcasecmp(key, "keepalive_timeout_sec") == 0) {
@@ -264,14 +268,22 @@ int server_run(ServerContext *ctx) {
     log_msg(LOG_LEVEL_INFO, "Entering master accept event loop on port %u...", ctx->config.port);
 
     while (ctx->is_running) {
+        if (server_is_shutdown_requested()) {
+            server_request_shutdown(ctx);
+            break;
+        }
+
         struct pollfd pfd;
         pfd.fd = ctx->listen_fd;
         pfd.events = POLLIN;
         pfd.revents = 0;
 
         int poll_rc = poll(&pfd, 1, 100);
+        if (server_is_shutdown_requested() || !ctx->is_running) {
+            server_request_shutdown(ctx);
+            break;
+        }
         if (poll_rc <= 0) {
-            /* Timeout or interrupted: loop back to check ctx->is_running */
             continue;
         }
 
@@ -357,10 +369,21 @@ int server_run(ServerContext *ctx) {
     return 0;
 }
 
+static volatile sig_atomic_t g_server_sig_shutdown = 0;
+
+void server_signal_request_shutdown(void) {
+    g_server_sig_shutdown = 1;
+}
+
+bool server_is_shutdown_requested(void) {
+    return g_server_sig_shutdown != 0;
+}
+
 void server_request_shutdown(ServerContext *ctx) {
     if (!ctx) return;
     ctx->is_running = false;
     connection_queue_shutdown(&ctx->queue);
+    thread_pool_request_stop(&ctx->thread_pool);
 }
 
 void server_destroy(ServerContext *ctx) {

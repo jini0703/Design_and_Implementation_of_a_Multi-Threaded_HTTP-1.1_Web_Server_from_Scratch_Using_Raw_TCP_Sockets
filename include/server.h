@@ -10,6 +10,7 @@
  */
 
 #include <stdbool.h>
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stddef.h>
 #include "tcp_socket.h"
@@ -32,6 +33,7 @@ typedef struct {
     int socket_snd_timeout_sec;
     size_t worker_threads;
     size_t connection_queue_capacity;
+    int worker_idle_timeout_sec;
     int keepalive_max_requests;
     int keepalive_timeout_sec;
     size_t max_header_size;
@@ -64,7 +66,7 @@ struct ServerContext {
     ThreadPool thread_pool;
     MetricsCollector metrics;
     QlaacController controller;
-    volatile bool is_running;
+    atomic_bool is_running;
     pthread_t sampler_thread;
     bool sampler_thread_started;
 };
@@ -102,6 +104,17 @@ int server_run(ServerContext *ctx);
  * @param ctx Active server context.
  */
 void server_request_shutdown(ServerContext *ctx);
+
+/**
+ * @brief Async-signal-safe request for server shutdown (safe to call from signal handlers).
+ */
+void server_signal_request_shutdown(void);
+
+/**
+ * @brief Query if a shutdown was requested asynchronously via signal.
+ * @return True if shutdown requested, false otherwise.
+ */
+bool server_is_shutdown_requested(void);
 
 /**
  * @brief Cleanly tear down thread pool, sockets, metrics, and free runtime context.

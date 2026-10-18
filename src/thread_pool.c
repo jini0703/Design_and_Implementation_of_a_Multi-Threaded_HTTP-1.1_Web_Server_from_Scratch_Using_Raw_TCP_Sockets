@@ -21,9 +21,13 @@ static void *worker_thread_routine(void *arg) {
     ThreadPool *pool = (ThreadPool *)arg;
     ServerContext *ctx = pool->server_ctx;
 
+    int pop_timeout_ms = (ctx && ctx->config.worker_idle_timeout_sec > 0)
+                         ? (ctx->config.worker_idle_timeout_sec * 1000)
+                         : 1000;
+
     while (pool->is_running) {
         ClientConnection conn;
-        int pop_rc = connection_queue_pop(pool->queue, &conn, 1000);
+        int pop_rc = connection_queue_pop(pool->queue, &conn, pop_timeout_ms);
         if (pop_rc == -2) {
             /* Queue is shut down */
             break;
@@ -51,9 +55,9 @@ static void *worker_thread_routine(void *arg) {
         if (keepalive_timeout_sec <= 0) keepalive_timeout_sec = 5;
 
         while (pool->is_running) {
-            /* Check QLAAC controller admission state */
-            QlaacDecision qdec = adaptive_controller_evaluate(&ctx->controller);
-            if (qdec == QLAAC_ACTION_THROTTLE_KEEPALIVE) {
+            /* Check QLAAC controller state for keep-alive throttling without side-effects */
+            QlaacState qstate = adaptive_controller_get_state(&ctx->controller);
+            if (qstate == QLAAC_STATE_CAUTION || qstate == QLAAC_STATE_OVERLOAD) {
                 keepalive_timeout_sec = 1;
                 max_requests = 1;
             }
@@ -93,7 +97,7 @@ static void *worker_thread_routine(void *arg) {
                 }
 
                 ssize_t n = tcp_recv_some(conn.fd, cb.buf + cb.length, cb.capacity - cb.length,
-                                          deadline, NULL);
+                                          deadline, &pool->stop_requested);
                 if (n == 0) {
                     /* Orderly peer disconnect */
                     break;
@@ -166,7 +170,8 @@ static void *worker_thread_routine(void *arg) {
             uint64_t req_end = monotonic_ns();
             double lat = (double)(req_end - req_start_time) / 1000000.0;
             const char *m_route = (ctx->config.metrics_route[0] != '\0') ? ctx->config.metrics_route : "/metrics";
-            if (strcmp(req.uri, m_route) == 0 || strcmp(req.uri, "/metrics") == 0) {
+            const char *path = (req.path[0] != '\0') ? req.path : req.uri;
+            if (strcmp(path, m_route) == 0 || strcmp(path, "/metrics") == 0) {
                 lat = -1.0;
             }
             metrics_record_request(&ctx->metrics, res.status, lat, bytes_consumed, sent);
@@ -202,6 +207,7 @@ int thread_pool_init(ThreadPool *pool, size_t thread_count,
     pool->server_ctx = server_ctx;
     pool->active_workers = 0;
     pool->is_running = true;
+    pool->stop_requested = false;
 
     if (pthread_mutex_init(&pool->stats_lock, NULL) != 0) {
         return -1;
@@ -216,6 +222,7 @@ int thread_pool_init(ThreadPool *pool, size_t thread_count,
     for (size_t i = 0; i < thread_count; i++) {
         if (pthread_create(&pool->threads[i], NULL, worker_thread_routine, pool) != 0) {
             pool->is_running = false;
+            pool->stop_requested = true;
             for (size_t j = 0; j < i; j++) {
                 pthread_join(pool->threads[j], NULL);
             }
@@ -241,10 +248,16 @@ size_t thread_pool_get_total_count(const ThreadPool *pool) {
     return pool ? pool->thread_count : 0;
 }
 
+void thread_pool_request_stop(ThreadPool *pool) {
+    if (!pool) return;
+    pool->stop_requested = true;
+    pool->is_running = false;
+}
+
 void thread_pool_shutdown(ThreadPool *pool) {
     if (!pool || !pool->threads) return;
 
-    pool->is_running = false;
+    thread_pool_request_stop(pool);
     connection_queue_shutdown(pool->queue);
 
     for (size_t i = 0; i < pool->thread_count; i++) {

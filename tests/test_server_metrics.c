@@ -164,6 +164,58 @@ static void test_metrics_bounded_latency_window(void) {
     printf("[PASS] test_metrics_bounded_latency_window\n");
 }
 
+static void test_metrics_negative_latency_excluded(void) {
+    MetricsCollector mc;
+    metrics_init(&mc);
+
+    /* Record request with negative latency (e.g. /metrics telemetry request where lat = -1.0) */
+    metrics_record_request(&mc, 200, -1.0, 150, 400);
+
+    MetricsSnapshot snap;
+    metrics_get_snapshot(&mc, 0, 0, 4, &snap);
+
+    assert(snap.total_requests_completed == 1);
+    assert(snap.status_2xx_count == 1);
+    assert(snap.recent_latency_sample_count == 0);
+    assert(snap.avg_latency_ms == 0.0);
+    assert(snap.median_latency_ms == 0.0);
+    assert(snap.p95_latency_ms == 0.0);
+
+    /* Now record an application request with valid positive latency (15.0 ms) */
+    metrics_record_request(&mc, 200, 15.0, 120, 300);
+
+    metrics_get_snapshot(&mc, 0, 0, 4, &snap);
+    assert(snap.total_requests_completed == 2);
+    assert(snap.status_2xx_count == 2);
+    assert(snap.recent_latency_sample_count == 1);
+    assert(snap.avg_latency_ms == 15.0);
+    assert(snap.median_latency_ms == 15.0);
+    assert(snap.p95_latency_ms == 15.0);
+
+    metrics_destroy(&mc);
+    printf("[PASS] test_metrics_negative_latency_excluded\n");
+}
+
+static void test_metrics_format_json_serialization(void) {
+    MetricsCollector mc;
+    metrics_init(&mc);
+
+    metrics_record_request(&mc, 200, 25.0, 100, 200);
+
+    MetricsSnapshot snap;
+    metrics_get_snapshot(&mc, 1, 2, 4, &snap);
+
+    char json_buf[4096];
+    ssize_t written = metrics_format_json(&snap, json_buf, sizeof(json_buf));
+    assert(written > 0);
+    assert(strstr(json_buf, "\"recent_latency_sample_count\": 1") != NULL);
+    assert(strstr(json_buf, "\"total_requests_completed\": 1") != NULL);
+    assert(strstr(json_buf, "\"median_latency_ms\": 25.00") != NULL);
+
+    metrics_destroy(&mc);
+    printf("[PASS] test_metrics_format_json_serialization\n");
+}
+
 int main(void) {
     printf("--- Running Server Metrics Unit Tests ---\n");
     test_metrics_initialization();
@@ -171,6 +223,8 @@ int main(void) {
     test_metrics_overload_response_accounting();
     test_metrics_failed_overload_write();
     test_metrics_bounded_latency_window();
+    test_metrics_negative_latency_excluded();
+    test_metrics_format_json_serialization();
     printf("--- All Server Metrics Tests Passed ---\n");
     return EXIT_SUCCESS;
 }

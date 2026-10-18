@@ -74,7 +74,7 @@ enable_sendfile = true
 # ------------------------------------------------------------------------------
 # 5. Queue-and-Latency-Aware Admission Control (QLAAC) - Experimental
 # ------------------------------------------------------------------------------
-# Enable or disable the experimental adaptive admission controller
+# Enable or disable the experimental adaptive admission controller (disabled for baseline fixed-policy)
 adaptive_control_enabled = false
 
 # Sampling window in milliseconds for rolling latency and throughput metrics

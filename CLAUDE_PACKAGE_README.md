@@ -37,7 +37,7 @@
 4. **Honest Discussion of Performance & Overload Trade-offs:**
    - Always report metrics calculated strictly from verified **2xx application responses**.
    - Do NOT conflate successful throughput with attempted requests.
-   - At high concurrency (especially 64 clients under QLAAC), report HTTP 503 shedding rates (~87.5% rejection) honestly as intentional protection against tail latency collapse, rather than claiming high successful throughput.
+   - At high concurrency (especially 64 clients under QLAAC), report HTTP 503 shedding rates (~72.14% rejection; 16,475.40 ± 969.70 5xx responses) honestly as intentional protection against tail latency collapse, rather than claiming high successful throughput.
    - Latency percentiles (p50, p95, p99) represent successful 2xx responses; when zero 2xx responses succeed, latency is mathematically undefined (`N/A`), not `0.00 ms`.
 
 ---
@@ -146,24 +146,24 @@ python benchmark/verify_benchmark_statistics.py
 
 ### Verified Raw Benchmark Data Summary
 
-The raw data in `results/raw/` contains 20 independent trials per experiment across 4 concurrency tiers (1, 8, 32, 64 clients), with 5 trials per tier:
+The raw data in `results/raw/` contains 20 repeated trials per experiment across 4 concurrency tiers (2, 8, 32, 64 clients), with 5 repeated 10-second trials per tier (calculated via `benchmark/verify_benchmark_statistics.py` directly from `results/raw/experiment_*_tuned_comparison.csv` with sample standard deviation):
 
-#### 1. Baseline Server (Uncontrolled Queue)
-* **c=1**: Successful RPS = `159.20 ± 3.42 req/s` | p50 = `5.98 ± 0.13 ms` | p95 = `8.26 ± 0.32 ms` | p99 = `9.74 ± 0.44 ms` | Rejections = `0`
-* **c=8**: Successful RPS = `884.20 ± 24.15 req/s` | p50 = `8.44 ± 0.23 ms` | p95 = `12.56 ± 0.48 ms` | p99 = `15.82 ± 0.62 ms` | Rejections = `0`
-* **c=32**: Successful RPS = `1182.40 ± 38.60 req/s` | p50 = `24.10 ± 1.12 ms` | p95 = `48.30 ± 2.45 ms` | p99 = `68.50 ± 3.80 ms` | Rejections = `0`
-* **c=64**: Successful RPS = `1215.80 ± 45.10 req/s` | p50 = `48.60 ± 2.80 ms` | p95 = `98.40 ± 5.60 ms` | p99 = `142.30 ± 8.90 ms` | Rejections = `0` (Unbounded queue causes latency explosion)
+#### 1. Baseline Server (Bounded FIFO Queue, Capacity 64, No QLAAC)
+* **c=2**: Successful 2xx RPS = `13,929.24 ± 334.23 req/s` | p50 = `0.13 ± 0.01 ms` | p95 = `0.23 ± 0.01 ms` | p99 = `0.31 ± 0.02 ms` | 5xx = `0.00 ± 0.00` | Shedding = `0.00%`
+* **c=8**: Successful 2xx RPS = `6,629.38 ± 148.21 req/s` | p50 = `0.54 ± 0.01 ms` | p95 = `1.38 ± 0.04 ms` | p99 = `29.09 ± 0.50 ms` | 5xx = `0.00 ± 0.00` | Shedding = `0.00%`
+* **c=32**: Successful 2xx RPS = `6,860.38 ± 107.11 req/s` | p50 = `0.52 ± 0.01 ms` | p95 = `1.34 ± 0.03 ms` | p99 = `204.00 ± 2.94 ms` | 5xx = `0.00 ± 0.00` | Shedding = `0.00%`
+* **c=64**: Successful 2xx RPS = `6,828.52 ± 157.91 req/s` | p50 = `0.52 ± 0.01 ms` | p95 = `1.38 ± 0.05 ms` | p99 = `440.33 ± 9.21 ms` | 5xx = `0.00 ± 0.00` | Shedding = `0.00%` (Connections wait in bounded queue behind pinned workers, inflating tail latency)
 
 #### 2. QLAAC Controller (Queue-and-Latency-Aware Admission Control)
-* **c=1**: Successful RPS = `158.80 ± 3.20 req/s` | p50 = `5.99 ± 0.12 ms` | p95 = `8.28 ± 0.30 ms` | p99 = `9.76 ± 0.42 ms` | State = `NORMAL`
-* **c=8**: Successful RPS = `880.60 ± 22.40 req/s` | p50 = `8.48 ± 0.22 ms` | p95 = `12.60 ± 0.45 ms` | p99 = `15.88 ± 0.60 ms` | State = `NORMAL`
-* **c=32**: Successful RPS = `1140.20 ± 34.20 req/s` | p50 = `22.80 ± 0.95 ms` | p95 = `41.20 ± 1.80 ms` | p99 = `54.60 ± 2.90 ms` | State = `CAUTION` (keep-alive throttled to prevent queue buildup)
-* **c=64**: Successful RPS = `182.40 ± 16.50 req/s` | p50 = `14.20 ± 1.10 ms` | p95 = `28.60 ± 2.10 ms` | p99 = `38.40 ± 3.20 ms` | State = `OVERLOAD` (Fast 503 shedding sheds ~87.5% of excess load to bound tail latency below 40 ms)
+* **c=2**: Successful 2xx RPS = `14,665.40 ± 610.30 req/s` | p50 = `0.12 ± 0.00 ms` | p95 = `0.22 ± 0.03 ms` | p99 = `0.33 ± 0.05 ms` | 5xx = `0.00 ± 0.00` | Shedding = `0.00%` | State = `NORMAL`
+* **c=8**: Successful 2xx RPS = `2,129.26 ± 50.35 req/s` | p50 = `1.55 ± 0.02 ms` | p95 = `2.83 ± 0.03 ms` | p99 = `3.55 ± 0.06 ms` | 5xx = `0.00 ± 0.00` | Shedding = `0.00%` | State = `CAUTION` (keep-alive shortened)
+* **c=32**: Successful 2xx RPS = `1,970.40 ± 55.83 req/s` | p50 = `10.46 ± 0.26 ms` | p95 = `14.31 ± 0.66 ms` | p99 = `16.55 ± 1.00 ms` | 5xx = `0.00 ± 0.00` | Shedding = `0.00%` | State = `CAUTION`
+* **c=64**: Successful 2xx RPS = `638.12 ± 126.44 req/s` | p50 = `19.61 ± 6.35 ms` | p95 = `28.76 ± 0.59 ms` | p99 = `161.18 ± 159.88 ms` | 5xx = `16,475.40 ± 969.70` | Shedding = `72.14% ± 5.15%` | State = `OVERLOAD` (Early 503 shedding sheds 72.14% of excess load; caps p99 latency compared to baseline 440 ms, but exhibits high sample standard deviation of 159.88 ms due to cycling between OVERLOAD and CAUTION)
 
 ### Key Architectural Narrative for Report
-- **The Core Problem:** Under naive FIFO queueing at high concurrency, bufferbloat causes tail latency (p99) to surge past 140 ms, risking cascading timeouts.
-- **The QLAAC Solution:** By monitoring worker saturation, queue depth, and rolling p95 latency, QLAAC enters `CAUTION` at 32 clients and `OVERLOAD` at 64 clients. In `OVERLOAD`, it sheds excess requests with immediate HTTP 503 responses (`Retry-After: 5`), preserving low latency (< 39 ms p99) and fast execution for admitted requests.
-- **The Trade-Off:** QLAAC intentionally trades raw volumetric request admission for bounded tail latency and guaranteed server responsiveness under stress.
+- **The Core Problem:** Under naive FIFO queueing at high concurrency, connections queue up behind pinned workers, causing tail latency (p99) to surge to 440.33 ms at 64 clients.
+- **The QLAAC Solution:** By monitoring worker saturation, queue depth, and rolling p95 latency, QLAAC enters `CAUTION` at 8 and 32 clients and `OVERLOAD` at 64 clients. In `OVERLOAD`, it sheds excess requests with immediate HTTP 503 responses (`Retry-After: 5`), capping tail latency compared to the baseline.
+- **The Trade-Off:** QLAAC intentionally trades raw volumetric request throughput (-90.7% at 64 clients) for bounded tail latency, and its overload tail exhibits significant variance across repeated trials.
 
 ---
 
@@ -182,4 +182,4 @@ The project includes 49 automated test cases covering systems-level C17 componen
    - Malformed request handling & syntax validation (5 tests)
    - Security constraints & path traversal prevention (4 tests)
 
-Refer to `results/test_evidence/test_run_summary.txt` and `results/screenshots/06_test_results.png` for complete execution evidence.
+Refer to `results/test_evidence/test_run_summary.txt` for complete authentic execution evidence (image `06_test_results.png` was styled with terminal typography and is superseded by the verified raw test summary).

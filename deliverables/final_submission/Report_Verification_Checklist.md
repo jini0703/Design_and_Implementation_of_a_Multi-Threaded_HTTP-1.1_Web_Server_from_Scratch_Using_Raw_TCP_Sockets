@@ -35,28 +35,41 @@
    - Removed all placeholders: `[Reg. No.]`, `[TEAM MEMBER – CONFIRM]`, and `[add remaining team members and Reg. Nos., sorted by Reg. No., if applicable]`.
    - Updated Word document core properties (`Author: Yash Pradhan, Anjini Pandey`).
 
-2. **Course-Module Mapping (Section 1.5):**
+2. **Resolution of Execution Environments & Toolchain Discrepancy (Section 4.1, Appendix B.2, Appendix B.6):**
+   - **Resolved GCC 15.2.0 vs GCC 13.3.0 and Python 3.14.4 vs Python 3.13.16 Discrepancy:**
+     - Verified actual test logs: Appendix B.2 contains a genuine test run executed on an Ubuntu 24.04 LTS containerized authoring sandbox on 17 October 2026 (`Linux 6.6.137+ x86_64`, GCC 13.3.0, Python 3.13.16).
+     - The verification platform used for benchmark evaluation and workstation validation in Section 4.1 is an Intel(R) Core(TM) Ultra 7 155H host running WSL2 (`Linux 6.18.33.2-microsoft-standard-WSL2`, GCC 15.2.0, Python 3.14.4).
+     - Table 4.1 (Table 6 in DOCX) was explicitly updated to document all three environments separately without conflation or invented details:
+       1. *Student Development Platform:* Linux via WSL2 / Windows 11 host (POSIX C17 / GCC 11+).
+       2. *Local Workstation Verification Platform:* Intel Core Ultra 7 155H (16 physical cores, 22 vCPUs, 7.5 GiB RAM, Linux 6.18 WSL2, GCC 15.2.0, Python 3.14.4).
+       3. *Supplementary Authoring & Mechanism Sandbox:* Ubuntu 24.04 LTS container (2 logical CPUs, GCC 13.3.0, Python 3.13.16).
+   - **Clarified 2-vCPU (Appendix B.6) vs 22-vCPU (Section 4.1) Resource Limits:**
+     - Appendix B.6 documents a supplementary 5-second qualitative mechanism check ($C = 8$ and $C = 64$) executed in the 2-vCPU supplementary sandbox environment to demonstrate admission-controller state transitions under constrained CPU allocation.
+     - Appendix B.2 and B.6 were explicitly annotated to identify the 2-vCPU containerized environment, preventing confusion with the primary 22-vCPU workstation platform.
+
+3. **Trial Independence & QLAAC State Carryover Qualification (Section 4.2, Section 5.3, Section 5.5):**
+   - Audited `benchmark/run_experiment.py`: the benchmark harness launches a single server process and executes consecutive 10-second trials sequentially across client concurrency tiers ($C = 2, 8, 32, 64$) with a 0.5 s sleep interval between trials.
+   - The server was *not* restarted between consecutive trials within a run.
+   - For the baseline server (static policy), trials are functionally independent of internal server state.
+   - For QLAAC (adaptive controller with 1.0 s sampling epoch, 5-window hysteresis, and rolling latency history), internal controller state (e.g., hysteresis counter, smoothed latency, and shedding probability) can carry over between consecutive trials if the server is not restarted.
+   - Replaced claims of "independent trials" with "repeated trials" throughout Section 4.2 (Table 7 & P[116], P[119]), Section 5.3 (P[144]), and Section 5.5 (P[176]).
+   - Explicitly qualified sample standard deviations as reflecting repeated-trial empirical dispersion rather than independent identically distributed (i.i.d.) trial variance.
+
+4. **Package README Benchmark Synchronization (`CLAUDE_PACKAGE_README.md`):**
+   - Corrected outdated placeholder/preliminary figures in `CLAUDE_PACKAGE_README.md` (lines 40, 146–186):
+     - Removed outdated $C=1$ row and unverified throughput numbers (1,215.8 RPS, 182.4 RPS, ~87.5% shedding, unbounded queue claims).
+     - Synchronized all benchmark tables and discussion with the verified 20-trial empirical dataset ($C = 2, 8, 32, 64$; 6,828.52 baseline RPS vs 638.12 QLAAC RPS at $C=64$; $72.14\% \pm 5.15\%$ shedding rate; bounded queue capacity 64).
+   - Rebuilt `deliverables/claude_report_package.zip` with updated files.
+
+5. **Course-Module Mapping (Section 1.5):**
    - Verified that no official BCSE308P syllabus document is present in the repository.
    - Removed editorial bracket `[Student to add module numbers/titles from the BCSE308P syllabus...]`.
    - Formally stated that because official curriculum module numbers could not be verified from archived repository files, they were not fabricated. Retained the rigorous mapping in Table 1.1 connecting project components to foundational Computer Networks concepts (TCP byte streams, HTTP/1.1 framing, thread-pool concurrency, bounded queueing dynamics, and empirical evaluation).
 
-3. **Hardware & Verification Environment (Section 4.1):**
-   - Factually resolved Table 4.1 (Table 6 in DOCX) to distinguish:
-     - **Historical Benchmark Machine:** Windows 11 host with WSL2 execution environment (POSIX C17 / GCC 11+); exact CPU model and RAM limits were not recorded in CSV headers.
-     - **Independent Verification Platform:** Intel(R) Core(TM) Ultra 7 155H (16 physical cores, 22 vCPUs), 7.5 GiB RAM, Linux 6.18.33.2-microsoft-standard-WSL2 (x86_64), GCC 15.2.0, Python 3.14.4 (October 2026).
-   - Removed placeholder `[to be confirmed by the student: not recorded in the supplied materials]`.
-
-4. **Benchmark Reproducibility & Launch Configuration:**
-   - In Section 4.2 / 4.3 (P[109] and P[119]):
-     - Clarified that `config/server.conf.example` defines 8,192-byte buffers while compiled server defaults (`server_config_init_defaults` in `src/server.c`) initialize both header and I/O buffers to 16,384 bytes, which are active when starting without a config file. Removed `[student to confirm launch command]`.
-     - Documented the benchmark execution command: `python3 benchmark/run_experiment.py --url http://127.0.0.1:8080/health --clients 2,8,32,64 --duration 10 --trials 5 --output <csv>` (run against `bin/server` and `bin/server -a`).
-     - Clarified the meaning of "tuned" in raw CSV filenames: the refined multi-factor controller in `src/adaptive_controller.c` (worker saturation demoted to CAUTION; OVERLOAD requiring queue $\ge 0.90$, $p95 \ge 150$ ms, or sustained multi-factor pressure) superseding preliminary runs that tripped overload on worker saturation alone. Removed `[student to confirm]` and `[student to describe]`.
-     - Documented that `run_experiment.py` steps through client counts sequentially with a 0.5 s inter-trial pause, meaning controller hysteresis can carry over across client tiers if the server is not restarted externally between batches.
-
-5. **Queue Description & Architectural Invariants:**
+6. **Queue Description & Architectural Invariants:**
    - Confirmed that the baseline server queue is strictly a thread-safe bounded circular FIFO with fixed capacity 64 (`connection_queue_capacity = 64`), guarded by a mutex and condition variables. It is nowhere described as unbounded.
 
-6. **Literature & Citations (Section 7):**
+7. **Literature & Citations (Section 7):**
    - Enriched all 11 IEEE citations with complete bibliographic records:
      - [4] Welsh, Culler, Brewer (SOSP 2001, pp. 230–243, doi: 10.1145/502034.502057)
      - [5] Welsh and Culler (USITS 2003, pp. 45–60)
@@ -67,18 +80,18 @@
      - [10] Dean and Barroso (CACM 2013, vol. 56, no. 2, pp. 74–80, doi: 10.1145/2408776.2408794)
      - [11] Little (Oper. Res. 1961, vol. 9, no. 3, pp. 383–387, doi: 10.1287/opre.9.3.383)
 
-7. **Test Evidence & Visual Integrity:**
+8. **Test Evidence & Visual Integrity:**
    - Acknowledged that `results/screenshots/06_test_results.png` was synthetically generated. Confirmed it is excluded as proof of test execution.
    - Textual execution summaries cite the authentic test suite run (26/26 C unit tests, 23/23 live Python tests, 49/49 passing).
 
-8. **Table of Contents & Pagination:**
+9. **Table of Contents & Pagination:**
    - Updated static TOC page numbers in Table 1 to match native Microsoft Word COM rendering (40 pages). Every single section heading verified against its exact rendered page in the PDF.
 
 ---
 
 ## 3. Numerical Verification Summary
 
-All values in Chapter 5 and Appendix B match `benchmark/verify_benchmark_statistics.py` directly computed from `results/raw/experiment_baseline_tuned_comparison.csv` and `results/raw/experiment_qlaac_tuned_comparison.csv` ($n = 5$ independent 10-second trials, sample standard deviation):
+All values in Chapter 5 and Appendix B match `benchmark/verify_benchmark_statistics.py` directly computed from `results/raw/experiment_baseline_tuned_comparison.csv` and `results/raw/experiment_qlaac_tuned_comparison.csv` ($n = 5$ repeated 10-second trials, sample standard deviation):
 
 | Clients ($C$) | Configuration | Verified 2xx RPS (Mean $\pm$ SD) | $p50$ Latency (ms) | $p95$ Latency (ms) | $p99$ Latency (ms) | HTTP 5xx Sent (Mean $\pm$ SD) | Shedding Rate (%) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |

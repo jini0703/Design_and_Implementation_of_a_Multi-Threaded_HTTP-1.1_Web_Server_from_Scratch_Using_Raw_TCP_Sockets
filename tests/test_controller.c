@@ -23,7 +23,9 @@ static void test_qlaac_worker_saturation_empty_queue(void) {
         .worker_caution_threshold = 0.85,
         .worker_overload_threshold = 1.00,
         .recovery_samples_required = 3,
-        .sustained_pressure_threshold = 3
+        .sustained_pressure_threshold = 3,
+        .queue_wait_caution_ms = 25.0,
+        .queue_wait_overload_ms = 100.0
     };
 
     adaptive_controller_init(&c, &cfg);
@@ -31,22 +33,22 @@ static void test_qlaac_worker_saturation_empty_queue(void) {
     assert(adaptive_controller_evaluate(&c) == QLAAC_ACTION_ADMIT);
 
     /*
-     * Scenario 1: Worker utilization at 100% with only 6% queue occupancy and fast latency (1.5 ms).
-     * Rule: Must NOT cause indiscriminate rejection or enter OVERLOAD.
-     * Worker saturation serves as an early-warning signal, transitioning to CAUTION.
+     * Scenario 1: Worker utilization at 100% with only 6% queue occupancy, fast latency (1.5 ms),
+     * and healthy queue wait (0.5 ms).
+     * Rule: High worker utilization alone with a short queue and low queue wait MUST NOT
+     * trigger restrictive CAUTION state. Processing continues normally in NORMAL.
      */
-    QlaacState st = adaptive_controller_update_ex(&c, 0.06, 1.00, 1.5);
-    assert(st == QLAAC_STATE_CAUTION);
-    /* In CAUTION, incoming requests are admitted; keepalive is throttled */
-    assert(adaptive_controller_evaluate(&c) == QLAAC_ACTION_THROTTLE_KEEPALIVE);
+    QlaacState st = adaptive_controller_update_queue_aware(&c, 0.06, 1.00, 1.5, 0.5);
+    assert(st == QLAAC_STATE_NORMAL);
+    assert(adaptive_controller_evaluate(&c) == QLAAC_ACTION_ADMIT);
     assert(c.total_overload_transitions == 0);
     assert(c.total_shed_requests == 0);
 
-    /* Continued operation under 100% worker saturation with 6% queue occupancy stays in CAUTION */
-    st = adaptive_controller_update_ex(&c, 0.06, 1.00, 2.0);
-    assert(st == QLAAC_STATE_CAUTION);
-    st = adaptive_controller_update_ex(&c, 0.06, 1.00, 2.0);
-    assert(st == QLAAC_STATE_CAUTION);
+    /* Continued operation under 100% worker saturation with short queue stays in NORMAL */
+    st = adaptive_controller_update_queue_aware(&c, 0.06, 1.00, 2.0, 0.5);
+    assert(st == QLAAC_STATE_NORMAL);
+    st = adaptive_controller_update_queue_aware(&c, 0.06, 1.00, 2.0, 0.6);
+    assert(st == QLAAC_STATE_NORMAL);
     assert(c.total_overload_transitions == 0);
     assert(c.total_shed_requests == 0);
 
@@ -349,13 +351,172 @@ static void test_qlaac_get_snapshot_thread_safety(void) {
     printf("[PASS] test_qlaac_get_snapshot_thread_safety\n");
 }
 
+static void test_qlaac_worker_saturation_moderate_queue(void) {
+    QlaacController c;
+    QlaacConfig cfg = {
+        .enabled = true,
+        .queue_caution_threshold = 0.70,
+        .queue_overload_threshold = 0.90,
+        .latency_caution_ms = 50.0,
+        .latency_overload_ms = 150.0,
+        .worker_caution_threshold = 0.85,
+        .worker_overload_threshold = 1.00,
+        .recovery_samples_required = 3,
+        .sustained_pressure_threshold = 3,
+        .queue_wait_caution_ms = 25.0,
+        .queue_wait_overload_ms = 100.0
+    };
+
+    adaptive_controller_init(&c, &cfg);
+
+    /* 100% workers + queue occupancy 55% (>= 50%) -> enters CAUTION */
+    QlaacState st = adaptive_controller_update_queue_aware(&c, 0.55, 1.00, 15.0, 5.0);
+    assert(st == QLAAC_STATE_CAUTION);
+    assert(adaptive_controller_evaluate(&c) == QLAAC_ACTION_THROTTLE_KEEPALIVE);
+
+    adaptive_controller_destroy(&c);
+    printf("[PASS] test_qlaac_worker_saturation_moderate_queue\n");
+}
+
+static void test_qlaac_queue_wait_triggers(void) {
+    QlaacController c;
+    QlaacConfig cfg = {
+        .enabled = true,
+        .queue_caution_threshold = 0.70,
+        .queue_overload_threshold = 0.90,
+        .latency_caution_ms = 50.0,
+        .latency_overload_ms = 150.0,
+        .worker_caution_threshold = 0.85,
+        .worker_overload_threshold = 1.00,
+        .recovery_samples_required = 3,
+        .sustained_pressure_threshold = 3,
+        .queue_wait_caution_ms = 25.0,
+        .queue_wait_overload_ms = 100.0
+    };
+
+    adaptive_controller_init(&c, &cfg);
+
+    /* Queue wait >= 25.0 ms triggers CAUTION even with short queue (20%) and low worker load (40%) */
+    QlaacState st = adaptive_controller_update_queue_aware(&c, 0.20, 0.40, 5.0, 30.0);
+    assert(st == QLAAC_STATE_CAUTION);
+    assert(adaptive_controller_evaluate(&c) == QLAAC_ACTION_THROTTLE_KEEPALIVE);
+
+    /* Queue wait >= 100.0 ms with moderate queue (< 70%) triggers CAUTION (fair-sharing, no shedding) */
+    st = adaptive_controller_update_queue_aware(&c, 0.40, 0.40, 5.0, 120.0);
+    assert(st == QLAAC_STATE_CAUTION);
+    assert(adaptive_controller_evaluate(&c) == QLAAC_ACTION_THROTTLE_KEEPALIVE);
+
+    /* Queue wait >= 100.0 ms coupled with growing queue (>= 70%) triggers OVERLOAD (shedding) */
+    st = adaptive_controller_update_queue_aware(&c, 0.75, 0.40, 5.0, 120.0);
+    assert(st == QLAAC_STATE_OVERLOAD);
+    assert(adaptive_controller_evaluate(&c) == QLAAC_ACTION_REJECT_OVERLOAD);
+
+    adaptive_controller_destroy(&c);
+    printf("[PASS] test_qlaac_queue_wait_triggers\n");
+}
+
+static void test_qlaac_c32_moderate_queue_no_premature_overload(void) {
+    QlaacController c;
+    QlaacConfig cfg = {
+        .enabled = true,
+        .queue_caution_threshold = 0.70,
+        .queue_overload_threshold = 0.90,
+        .latency_caution_ms = 50.0,
+        .latency_overload_ms = 150.0,
+        .worker_caution_threshold = 0.85,
+        .worker_overload_threshold = 1.00,
+        .recovery_samples_required = 3,
+        .sustained_pressure_threshold = 3,
+        .queue_wait_caution_ms = 25.0,
+        .queue_wait_overload_ms = 100.0
+    };
+
+    adaptive_controller_init(&c, &cfg);
+
+    /*
+     * Regression test for C=32 moderate queue scenario:
+     * 28/64 queued connections (occupancy 0.4375 < 0.70), 100% worker utilization,
+     * ultra-fast processing latency (0.15 ms), initial queue-wait = 240 ms.
+     * The controller MUST enter CAUTION (to activate keep-alive fair sharing)
+     * and MUST NOT trigger OVERLOAD (which would falsely shed 90% of requests).
+     */
+    QlaacState st = adaptive_controller_update_queue_aware(&c, 0.4375, 1.00, 0.15, 240.0);
+    assert(st == QLAAC_STATE_CAUTION);
+    assert(adaptive_controller_evaluate(&c) == QLAAC_ACTION_THROTTLE_KEEPALIVE);
+    assert(c.total_shed_requests == 0);
+    assert(c.total_overload_transitions == 0);
+
+    adaptive_controller_destroy(&c);
+    printf("[PASS] test_qlaac_c32_moderate_queue_no_premature_overload\n");
+}
+
+static void test_qlaac_recovery_blocked_by_queue_wait(void) {
+    QlaacController c;
+    QlaacConfig cfg = {
+        .enabled = true,
+        .queue_caution_threshold = 0.70,
+        .queue_overload_threshold = 0.90,
+        .latency_caution_ms = 50.0,
+        .latency_overload_ms = 150.0,
+        .worker_caution_threshold = 0.85,
+        .worker_overload_threshold = 1.00,
+        .recovery_samples_required = 3,
+        .sustained_pressure_threshold = 3,
+        .queue_wait_caution_ms = 25.0,
+        .queue_wait_overload_ms = 100.0
+    };
+
+    adaptive_controller_init(&c, &cfg);
+
+    /* Push into OVERLOAD via high latency */
+    QlaacState st = adaptive_controller_update_queue_aware(&c, 0.20, 0.50, 180.0, 10.0);
+    assert(st == QLAAC_STATE_OVERLOAD);
+
+    /* While queue-wait remains critical (110 ms >= 100 ms), it CANNOT step down from OVERLOAD */
+    for (int i = 0; i < 5; i++) {
+        st = adaptive_controller_update_queue_aware(&c, 0.20, 0.50, 2.0, 110.0);
+        assert(st == QLAAC_STATE_OVERLOAD);
+    }
+
+    /* Queue-wait drops to 40 ms (caution level < 100 ms but >= 25 ms).
+     * 3 consecutive samples allow step down from OVERLOAD to CAUTION. */
+    st = adaptive_controller_update_queue_aware(&c, 0.20, 0.50, 2.0, 40.0);
+    assert(st == QLAAC_STATE_OVERLOAD);
+    st = adaptive_controller_update_queue_aware(&c, 0.20, 0.50, 2.0, 40.0);
+    assert(st == QLAAC_STATE_OVERLOAD);
+    st = adaptive_controller_update_queue_aware(&c, 0.20, 0.50, 2.0, 40.0);
+    assert(st == QLAAC_STATE_CAUTION);
+
+    /* But while queue-wait is 40 ms (>= 25 ms caution threshold), it CANNOT recover to NORMAL */
+    for (int i = 0; i < 5; i++) {
+        st = adaptive_controller_update_queue_aware(&c, 0.20, 0.50, 2.0, 40.0);
+        assert(st == QLAAC_STATE_CAUTION);
+    }
+
+    /* Now queue wait drops to 1.0 ms (truly healthy) for 3 consecutive samples -> recovers to NORMAL */
+    st = adaptive_controller_update_queue_aware(&c, 0.20, 0.50, 2.0, 1.0);
+    assert(st == QLAAC_STATE_CAUTION);
+    st = adaptive_controller_update_queue_aware(&c, 0.20, 0.50, 2.0, 1.0);
+    assert(st == QLAAC_STATE_CAUTION);
+    st = adaptive_controller_update_queue_aware(&c, 0.20, 0.50, 2.0, 1.0);
+    assert(st == QLAAC_STATE_NORMAL);
+    assert(adaptive_controller_evaluate(&c) == QLAAC_ACTION_ADMIT);
+
+    adaptive_controller_destroy(&c);
+    printf("[PASS] test_qlaac_recovery_blocked_by_queue_wait\n");
+}
+
 int main(void) {
     printf("--- Running QLAAC Controller Unit Tests ---\n");
     test_qlaac_worker_saturation_empty_queue();
+    test_qlaac_worker_saturation_moderate_queue();
     test_qlaac_worker_saturation_growing_queue();
     test_qlaac_sustained_high_latency();
     test_qlaac_sustained_pressure();
+    test_qlaac_queue_wait_triggers();
+    test_qlaac_c32_moderate_queue_no_premature_overload();
     test_qlaac_recovery();
+    test_qlaac_recovery_blocked_by_queue_wait();
     test_qlaac_hysteresis_reset();
     test_qlaac_disabled_policy();
     test_qlaac_get_state_no_side_effects();

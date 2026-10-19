@@ -36,6 +36,12 @@ static void *worker_thread_routine(void *arg) {
             /* Timeout, check running flag and continue */
             continue;
         }
+        /* Record queue waiting time telemetry */
+        uint64_t deq_ns = conn.dequeued_ns > 0 ? conn.dequeued_ns : monotonic_ns();
+        uint64_t enq_ns = conn.enqueued_ns > 0 ? conn.enqueued_ns : conn.accepted_ns;
+        uint64_t q_wait_ns = (deq_ns >= enq_ns) ? (deq_ns - enq_ns) : 0;
+        double q_wait_ms = (double)q_wait_ns / (double)NS_PER_MS;
+        metrics_record_queue_wait(&ctx->metrics, q_wait_ms);
 
         /* Mark worker active */
         pthread_mutex_lock(&pool->stats_lock);
@@ -55,11 +61,20 @@ static void *worker_thread_routine(void *arg) {
         if (keepalive_timeout_sec <= 0) keepalive_timeout_sec = 5;
 
         while (pool->is_running) {
-            /* Check QLAAC controller state for keep-alive throttling without side-effects */
+            /* Check QLAAC controller state for keep-alive fair-sharing without side-effects */
             QlaacState qstate = adaptive_controller_get_state(&ctx->controller);
-            if (qstate == QLAAC_STATE_CAUTION || qstate == QLAAC_STATE_OVERLOAD) {
+
+            if (ctx->config.adaptive_control_enabled && qstate == QLAAC_STATE_OVERLOAD) {
                 keepalive_timeout_sec = 1;
-                max_requests = 1;
+                max_requests = (ctx->config.keepalive_max_requests > 16) ? 16 : ctx->config.keepalive_max_requests;
+                if (max_requests < 1) max_requests = 1;
+            } else if (ctx->config.adaptive_control_enabled && qstate == QLAAC_STATE_CAUTION) {
+                keepalive_timeout_sec = 2;
+                max_requests = (ctx->config.keepalive_max_requests > 16) ? 16 : ctx->config.keepalive_max_requests;
+                if (max_requests < 1) max_requests = 1;
+            } else {
+                keepalive_timeout_sec = ctx->config.keepalive_timeout_sec;
+                max_requests = ctx->config.keepalive_max_requests;
             }
 
             uint64_t req_start_time = 0;

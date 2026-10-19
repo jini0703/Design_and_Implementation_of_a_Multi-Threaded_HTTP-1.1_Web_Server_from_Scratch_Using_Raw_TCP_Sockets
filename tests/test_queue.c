@@ -83,11 +83,49 @@ static void test_queue_shutdown(void) {
     printf("[PASS] test_queue_shutdown\n");
 }
 
+#include <unistd.h>
+#include <time.h>
+
+static void test_queue_wait_timing(void) {
+    ConnectionQueue q;
+    int rc = connection_queue_init(&q, 8);
+    assert(rc == 0);
+
+    ClientConnection c = { .fd = 200, .port = 9000 };
+    strncpy(c.ip, "127.0.0.1", sizeof(c.ip) - 1);
+
+    rc = connection_queue_push(&q, &c, 0);
+    assert(rc == 0);
+
+    /* Sleep ~5ms (5,000 us) to simulate queue dwell time */
+    struct timespec ts = { .tv_sec = 0, .tv_nsec = 5 * 1000 * 1000 };
+    nanosleep(&ts, NULL);
+
+    ClientConnection out;
+    rc = connection_queue_pop(&q, &out, 0);
+    assert(rc == 0);
+    assert(out.fd == 200);
+
+    /* Verify monotonic timestamps are recorded */
+    assert(out.enqueued_ns > 0);
+    assert(out.dequeued_ns >= out.enqueued_ns);
+
+    uint64_t wait_ns = out.dequeued_ns - out.enqueued_ns;
+    double wait_ms = (double)wait_ns / 1000000.0;
+    /* Dwell time should be at least ~4 ms and less than 1000 ms */
+    assert(wait_ms >= 4.0);
+    assert(wait_ms < 1000.0);
+
+    connection_queue_destroy(&q);
+    printf("[PASS] test_queue_wait_timing\n");
+}
+
 int main(void) {
     printf("--- Running Connection Queue Unit Tests ---\n");
     test_queue_push_pop();
     test_queue_capacity_limit();
     test_queue_shutdown();
+    test_queue_wait_timing();
     printf("--- All Connection Queue Tests Passed ---\n");
     return EXIT_SUCCESS;
 }

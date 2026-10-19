@@ -190,6 +190,8 @@ TcpAcceptResult tcp_accept_client(int listen_fd, ClientConnection *out, int *err
 
     out->fd = cfd;
     out->accepted_ns = monotonic_ns();
+    out->enqueued_ns = out->accepted_ns;
+    out->dequeued_ns = 0;
     out->is_loopback = check_if_loopback((struct sockaddr *)&addr);
 
     char host[NI_MAXHOST];

@@ -53,6 +53,8 @@ typedef struct {
     double latency_overload_ms;       /**< e.g. 150.0 ms p95 */
     double worker_caution_threshold;  /**< e.g. 0.85 (85% busy) */
     double worker_overload_threshold; /**< e.g. 1.00 (100% busy) */
+    double queue_wait_caution_ms;     /**< e.g. 25.0 ms queue-wait p95 */
+    double queue_wait_overload_ms;    /**< e.g. 100.0 ms queue-wait p95 */
     size_t recovery_samples_required; /**< e.g. 5 consecutive healthy windows */
     size_t sustained_pressure_threshold; /**< e.g. 3 consecutive pressure windows to enter overload */
 } QlaacConfig;
@@ -100,6 +102,21 @@ QlaacState adaptive_controller_update_ex(QlaacController *controller,
                                          double queue_occupancy_ratio,
                                          double worker_utilization_ratio,
                                          double p95_latency_ms);
+
+/**
+ * @brief Ingest comprehensive metrics including queue-wait duration and evaluate transitions.
+ * @param controller Controller struct.
+ * @param queue_occupancy_ratio Ratio of current queue depth to capacity (0.0 - 1.0).
+ * @param worker_utilization_ratio Ratio of active workers to total workers (0.0 - 1.0).
+ * @param p95_processing_latency_ms Recent 95th-percentile processing latency in milliseconds.
+ * @param p95_queue_wait_ms Recent 95th-percentile queue wait time in milliseconds.
+ * @return Newly computed or current QlaacState.
+ */
+QlaacState adaptive_controller_update_queue_aware(QlaacController *controller,
+                                                  double queue_occupancy_ratio,
+                                                  double worker_utilization_ratio,
+                                                  double p95_processing_latency_ms,
+                                                  double p95_queue_wait_ms);
 
 /**
  * @brief Evaluate an admission decision for an incoming connection under current state.

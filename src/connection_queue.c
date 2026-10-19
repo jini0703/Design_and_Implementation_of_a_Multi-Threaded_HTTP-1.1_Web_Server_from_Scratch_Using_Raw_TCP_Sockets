@@ -90,6 +90,9 @@ int connection_queue_push(ConnectionQueue *queue, const ClientConnection *conn, 
     }
 
     queue->buffer[queue->tail] = *conn;
+    if (queue->buffer[queue->tail].enqueued_ns == 0) {
+        queue->buffer[queue->tail].enqueued_ns = monotonic_ns();
+    }
     queue->tail = (queue->tail + 1) % queue->capacity;
     queue->count++;
 
@@ -131,6 +134,7 @@ int connection_queue_pop(ConnectionQueue *queue, ClientConnection *conn, int tim
     }
 
     *conn = queue->buffer[queue->head];
+    conn->dequeued_ns = monotonic_ns();
     queue->head = (queue->head + 1) % queue->capacity;
     queue->count--;
 

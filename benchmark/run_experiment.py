@@ -46,7 +46,7 @@ def collect_system_metadata():
     }
 
 
-def read_http_response(sock, initial_buf=b"", timeout=2.0):
+def read_http_response(sock, initial_buf=b"", timeout=2.0, return_headers=False):
     """
     Read a complete, framed HTTP/1.1 response from sock.
     Respects Content-Length framing and preserves leftover buffer bytes for pipelined requests.
@@ -92,12 +92,14 @@ def read_http_response(sock, initial_buf=b"", timeout=2.0):
     # 3. Parse headers for framing and connection semantics
     content_length = None
     is_close = False
+    headers_dict = {}
 
     for line in lines[1:]:
         if b":" in line:
             k, v = line.split(b":", 1)
             k_lower = k.strip().lower()
             v_strip = v.strip().lower()
+            headers_dict[k_lower.decode("latin1", errors="ignore")] = v_strip.decode("latin1", errors="ignore")
             if k_lower == b"content-length":
                 try:
                     content_length = int(v_strip)
@@ -128,6 +130,8 @@ def read_http_response(sock, initial_buf=b"", timeout=2.0):
     body = post_header_bytes[:body_expected]
     remaining_buf = post_header_bytes[body_expected:]
 
+    if return_headers:
+        return status_code, is_close, body, remaining_buf, headers_dict
     return status_code, is_close, body, remaining_buf
 
 
@@ -147,13 +151,15 @@ def fetch_server_metrics(target_url):
             status, _, body, _ = read_http_response(s, timeout=2.0)
             if status == 200:
                 return json.loads(body.decode("utf-8", errors="ignore"))
+            elif status == 503:
+                return {"qlaac_state": "OVERLOAD", "is_503": True}
     except Exception:
         pass
     return None
 
 
-def run_python_load_generator(url, concurrency, duration_sec):
-    """Robust concurrent HTTP load generator with explicit status-line parsing and error categorization."""
+def run_python_load_generator(url, concurrency, duration_sec, retry_aware=False):
+    """Robust concurrent HTTP load generator with explicit status-line parsing, error categorization, and optional Retry-After backoff."""
     parsed = urlparse(url)
     host = parsed.hostname or "127.0.0.1"
     port = parsed.port or 8080
@@ -177,11 +183,12 @@ def run_python_load_generator(url, concurrency, duration_sec):
     transport_errors = 0
     timeouts = 0
     invalid_responses = 0
+    total_backoff_sec = 0.0
     success_latencies = []
 
     def worker_loop():
         nonlocal attempted_requests, success_2xx, http_3xx, http_4xx, http_5xx
-        nonlocal transport_errors, timeouts, invalid_responses
+        nonlocal transport_errors, timeouts, invalid_responses, total_backoff_sec
 
         local_attempted = 0
         local_2xx = 0
@@ -191,6 +198,7 @@ def run_python_load_generator(url, concurrency, duration_sec):
         local_transport_err = 0
         local_timeout_err = 0
         local_invalid_err = 0
+        local_backoff_sec = 0.0
         local_latencies = []
 
         while not stop_event.is_set():
@@ -208,7 +216,14 @@ def run_python_load_generator(url, concurrency, duration_sec):
                     local_attempted += 1
                     t0 = time.perf_counter()
                     sock.sendall(req_bytes)
-                    status_code, is_close, _body, buf = read_http_response(sock, initial_buf=buf, timeout=2.0)
+                    if retry_aware:
+                        status_code, is_close, _body, buf, hdrs = read_http_response(
+                            sock, initial_buf=buf, timeout=2.0, return_headers=True
+                        )
+                    else:
+                        status_code, is_close, _body, buf = read_http_response(
+                            sock, initial_buf=buf, timeout=2.0, return_headers=False
+                        )
                     t1 = time.perf_counter()
 
                     latency_ms = (t1 - t0) * 1000.0
@@ -222,6 +237,19 @@ def run_python_load_generator(url, concurrency, duration_sec):
                         local_4xx += 1
                     elif 500 <= status_code < 600:
                         local_5xx += 1
+                        if retry_aware:
+                            ra_str = hdrs.get("retry-after") if hdrs else None
+                            backoff_dur = 0.0
+                            if ra_str:
+                                try:
+                                    backoff_dur = float(ra_str)
+                                except ValueError:
+                                    backoff_dur = 0.0
+                            if backoff_dur <= 0.0:
+                                backoff_dur = 1.0
+                            t_bo_start = time.perf_counter()
+                            stop_event.wait(timeout=backoff_dur)
+                            local_backoff_sec += (time.perf_counter() - t_bo_start)
                     else:
                         local_invalid_err += 1
 
@@ -252,6 +280,7 @@ def run_python_load_generator(url, concurrency, duration_sec):
             transport_errors += local_transport_err
             timeouts += local_timeout_err
             invalid_responses += local_invalid_err
+            total_backoff_sec += local_backoff_sec
             success_latencies.extend(local_latencies)
 
     threads = []
@@ -296,6 +325,8 @@ def run_python_load_generator(url, concurrency, duration_sec):
         "transport_errors": transport_errors,
         "timeouts": timeouts,
         "invalid_responses": invalid_responses,
+        "total_backoff_sec": total_backoff_sec,
+        "retry_aware": retry_aware,
         "successful_rps": successful_rps,
         "avg_lat_ms": avg_lat,
         "p50_ms": p50,

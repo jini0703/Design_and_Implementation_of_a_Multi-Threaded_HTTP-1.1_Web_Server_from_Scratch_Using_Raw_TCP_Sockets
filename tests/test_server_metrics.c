@@ -216,6 +216,43 @@ static void test_metrics_format_json_serialization(void) {
     printf("[PASS] test_metrics_format_json_serialization\n");
 }
 
+static void test_metrics_queue_wait_accounting(void) {
+    MetricsCollector mc;
+    metrics_init(&mc);
+
+    /* Negative queue-wait must be rejected */
+    metrics_record_queue_wait(&mc, -1.0);
+
+    MetricsSnapshot snap;
+    metrics_get_snapshot(&mc, 0, 0, 4, &snap);
+    assert(snap.recent_queue_wait_sample_count == 0);
+    assert(snap.avg_queue_wait_ms == 0.0);
+    assert(snap.median_queue_wait_ms == 0.0);
+
+    /* Record 3 valid queue-wait samples: 10ms, 20ms, 30ms */
+    metrics_record_queue_wait(&mc, 10.0);
+    metrics_record_queue_wait(&mc, 20.0);
+    metrics_record_queue_wait(&mc, 30.0);
+
+    metrics_get_snapshot(&mc, 0, 0, 4, &snap);
+    assert(snap.recent_queue_wait_sample_count == 3);
+    assert(snap.avg_queue_wait_ms == 20.0);
+    assert(snap.median_queue_wait_ms == 20.0);
+    assert(snap.p95_queue_wait_ms == 30.0);
+    assert(snap.p99_queue_wait_ms == 30.0);
+
+    /* Check JSON output includes queue-wait metrics */
+    char json_buf[4096];
+    ssize_t written = metrics_format_json(&snap, json_buf, sizeof(json_buf));
+    assert(written > 0);
+    assert(strstr(json_buf, "\"recent_queue_wait_sample_count\": 3") != NULL);
+    assert(strstr(json_buf, "\"median_queue_wait_ms\": 20.00") != NULL);
+    assert(strstr(json_buf, "\"p95_queue_wait_ms\": 30.00") != NULL);
+
+    metrics_destroy(&mc);
+    printf("[PASS] test_metrics_queue_wait_accounting\n");
+}
+
 int main(void) {
     printf("--- Running Server Metrics Unit Tests ---\n");
     test_metrics_initialization();
@@ -224,6 +261,7 @@ int main(void) {
     test_metrics_failed_overload_write();
     test_metrics_bounded_latency_window();
     test_metrics_negative_latency_excluded();
+    test_metrics_queue_wait_accounting();
     test_metrics_format_json_serialization();
     printf("--- All Server Metrics Tests Passed ---\n");
     return EXIT_SUCCESS;

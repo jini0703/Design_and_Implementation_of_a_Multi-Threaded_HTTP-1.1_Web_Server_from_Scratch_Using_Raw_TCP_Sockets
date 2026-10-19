@@ -48,6 +48,8 @@ typedef struct {
     size_t sustained_pressure_threshold;
     double latency_caution_ms;
     double latency_overload_ms;
+    double queue_wait_caution_ms;
+    double queue_wait_overload_ms;
     double queue_caution_threshold;
     double queue_overload_threshold;
     double worker_caution_threshold;

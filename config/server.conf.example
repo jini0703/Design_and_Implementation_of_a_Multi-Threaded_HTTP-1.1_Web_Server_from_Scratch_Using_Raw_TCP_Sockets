@@ -92,6 +92,12 @@ latency_caution_ms = 50.0
 # 95th percentile response latency threshold (in milliseconds) triggering OVERLOAD
 latency_overload_ms = 150.0
 
+# 95th percentile queue-wait duration threshold (in milliseconds) triggering CAUTION
+queue_wait_caution_ms = 25.0
+
+# 95th percentile queue-wait duration threshold (in milliseconds) triggering OVERLOAD
+queue_wait_overload_ms = 100.0
+
 # Worker thread pool utilization ratio (0.0 to 1.0) triggering early-warning CAUTION
 worker_caution_threshold = 0.85
 

@@ -115,12 +115,31 @@ static void test_sendfile_fallback_offset_integrity(void) {
     printf("[PASS] test_sendfile_fallback_offset_integrity\n");
 }
 
+static void test_503_retry_after_header(void) {
+    HttpResponse res;
+    http_response_init(&res);
+
+    http_response_build_error(&res, HTTP_STATUS_SERVICE_UNAVAILABLE, "Server overloaded. Please retry shortly.", false);
+    http_response_add_header(&res, "Retry-After", "5");
+
+    char header_buf[1024];
+    ssize_t hlen = http_response_serialize_headers(&res, header_buf, sizeof(header_buf));
+    assert(hlen > 0);
+    assert(strstr(header_buf, "HTTP/1.1 503 Service Unavailable") != NULL);
+    assert(strstr(header_buf, "Retry-After: 5") != NULL);
+    assert(strstr(header_buf, "Connection: close") != NULL);
+
+    http_response_destroy(&res);
+    printf("[PASS] test_503_retry_after_header\n");
+}
+
 int main(void) {
     printf("--- Running HTTP Response Unit Tests ---\n");
     test_status_phrases();
     test_response_init();
     test_response_build_error_cleanup();
     test_sendfile_fallback_offset_integrity();
+    test_503_retry_after_header();
     printf("--- All HTTP Response Tests Passed ---\n");
     return EXIT_SUCCESS;
 }

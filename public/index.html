@@ -742,7 +742,7 @@
           <div id="meter-queue" class="meter-fill normal"></div>
         </div>
         <div class="card-desc">
-          <span>Buffer capacity: <strong id="val-queue-cap">64</strong> connections</span>
+          <span>Buffer: <strong id="val-queue-cap">64</strong> conns &bull; p95 Wait: <strong id="val-queue-wait-p95">0.00 ms</strong></span>
         </div>
       </div>
 
@@ -823,7 +823,7 @@
         <span>Queue-and-Latency-Aware Admission Control (QLAAC)</span>
       </div>
       <p class="section-desc">
-        Experimental closed-loop controller monitoring worker utilization, connection queue occupancy, and rolling p95 latency.
+        Experimental closed-loop controller monitoring worker utilization, connection queue occupancy, queue wait time, and rolling p95 latency.
         Transitions smoothly across three states to bound tail latency and safeguard against server collapse.
       </p>
 
@@ -870,7 +870,15 @@
             </div>
 
             <div class="qlaac-stat-row" style="margin-top: 0.5rem;">
-              <span class="label">Recent p95 Tail Latency:</span>
+              <span class="label">Recent p95 Queue Wait:</span>
+              <span class="val" id="val-signal-queue-wait">0.00 ms</span>
+            </div>
+            <div class="meter-bar">
+              <div id="meter-signal-queue-wait" class="meter-fill normal"></div>
+            </div>
+
+            <div class="qlaac-stat-row" style="margin-top: 0.5rem;">
+              <span class="label">Recent p95 Response Latency:</span>
               <span class="val" id="val-signal-lat">0.00 ms</span>
             </div>
             <div class="meter-bar">
@@ -884,16 +892,16 @@
           <div class="card-label">State Machine Invariants</div>
           <div style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
             <div>
-              <strong style="color: var(--state-normal);">NORMAL:</strong> Worker &lt; 85%, Queue &lt; 70%, p95 &lt; 50 ms.
+              <strong style="color: var(--state-normal);">NORMAL:</strong> Queue &lt; 70%, p95 wait &lt; 25 ms, p95 latency &lt; 50 ms. High worker load alone with short queue remains NORMAL.
             </div>
             <div>
-              <strong style="color: var(--state-caution);">CAUTION:</strong> Worker &ge; 85% or Queue &ge; 70%. Throttles keep-alive (<code>Connection: close</code>) to bound tail latency. Requests admitted.
+              <strong style="color: var(--state-caution);">CAUTION:</strong> Queue &ge; 70%, p95 wait &ge; 25 ms, or workers 100% + queue &ge; 50%. Bounded keep-alive (max 16 requests, 1s idle timeout).
             </div>
             <div>
-              <strong style="color: var(--state-overload);">OVERLOAD:</strong> Queue &ge; 90%, p95 &ge; 150 ms, or saturated workers + queue &ge; 70%. Immediate HTTP 503 shedding with <code>Retry-After: 5</code>.
+              <strong style="color: var(--state-overload);">OVERLOAD:</strong> Queue &ge; 90%, p95 wait &ge; 100 ms, p95 latency &ge; 150 ms, or sustained pressure. Immediate HTTP 503 shedding with <code>Retry-After: 5</code>.
             </div>
             <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem;">
-              *Recovery requires 3&ndash;5 consecutive healthy windows (hysteresis dampening).
+              *Recovery requires consecutive healthy windows below caution thresholds (hysteresis dampening).
             </div>
           </div>
         </div>
@@ -1270,7 +1278,7 @@
         workerMeter.style.width = `${Math.min(100, Math.max(3, workerPct))}%`;
         workerMeter.className = 'meter-fill ' + (workerPct >= 100 ? 'overload' : workerPct >= 85 ? 'caution' : 'normal');
 
-        // 4. Queue Depth
+        // 4. Queue Depth & Queue Wait
         const qDepth = data.current_queue_depth ?? 0;
         const qCap = data.queue_capacity ?? 64;
         const queuePct = qCap > 0 ? (qDepth / qCap) * 100 : 0;
@@ -1280,6 +1288,10 @@
         const queueMeter = document.getElementById('meter-queue');
         queueMeter.style.width = `${Math.min(100, Math.max(3, queuePct))}%`;
         queueMeter.className = 'meter-fill ' + (queuePct >= 90 ? 'overload' : queuePct >= 70 ? 'caution' : 'normal');
+
+        const qWaitP95 = data.p95_queue_wait_ms ?? 0.0;
+        const qWaitEl = document.getElementById('val-queue-wait-p95');
+        if (qWaitEl) qWaitEl.innerText = `${qWaitP95.toFixed(2)} ms`;
 
         // 5. Connection counters
         document.getElementById('val-conns-accepted').innerHTML = `${(data.total_connections_accepted ?? 0).toLocaleString()} <span style="font-size: 1rem; color: var(--text-muted);">accepted</span>`;
@@ -1301,7 +1313,7 @@
         if (qState === 'NORMAL') {
           explanationEl.innerText = 'Operating within safe bounds. All requests and connections admitted normally. Keep-alive persistent sockets fully supported.';
         } else if (qState === 'CAUTION') {
-          explanationEl.innerText = 'Early-warning threshold triggered (workers saturated or queue elevated). Tightening keep-alive (Connection: close) to bound tail latency. All new requests admitted.';
+          explanationEl.innerText = 'Queue pressure or queue-wait elevated. Tightening keep-alive (Connection: close, max 16 reqs) to bound tail latency. All new requests admitted.';
         } else if (qState === 'OVERLOAD') {
           explanationEl.innerText = 'Critical queue buffer saturation or tail latency breach. Actively shedding incoming connections with immediate HTTP 503 (Retry-After: 5) to protect server stability.';
         }
@@ -1319,6 +1331,15 @@
         const sigQueueMeter = document.getElementById('meter-signal-queue');
         sigQueueMeter.style.width = `${Math.min(100, Math.max(3, queuePct))}%`;
         sigQueueMeter.className = 'meter-fill ' + (queuePct >= 90 ? 'overload' : queuePct >= 70 ? 'caution' : 'normal');
+
+        const sigQWaitEl = document.getElementById('val-signal-queue-wait');
+        if (sigQWaitEl) sigQWaitEl.innerText = `${qWaitP95.toFixed(2)} ms`;
+        const sigQWaitMeter = document.getElementById('meter-signal-queue-wait');
+        if (sigQWaitMeter) {
+          const qWaitPct = Math.min(100, Math.max(3, (qWaitP95 / 100.0) * 100));
+          sigQWaitMeter.style.width = `${qWaitPct}%`;
+          sigQWaitMeter.className = 'meter-fill ' + (qWaitP95 >= 100.0 ? 'overload' : qWaitP95 >= 25.0 ? 'caution' : 'normal');
+        }
 
         const latVal = (hasRecentSamples && p95 !== null) ? p95 : 0.0;
         document.getElementById('val-signal-lat').innerText = hasRecentSamples ? `${latVal.toFixed(2)} ms` : '— (idle)';

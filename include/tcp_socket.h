@@ -47,6 +47,8 @@ typedef struct {
     uint16_t port;
     bool is_loopback;      /**< Peer address is 127.0.0.0/8, ::1, or ::ffff:127.0.0.0/104. */
     uint64_t accepted_ns;  /**< monotonic_ns() timestamp taken right after accept(). */
+    uint64_t enqueued_ns;  /**< monotonic_ns() timestamp taken right before queue push. */
+    uint64_t dequeued_ns;  /**< monotonic_ns() timestamp taken right after queue pop. */
 } ClientConnection;
 
 typedef enum {

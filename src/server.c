@@ -54,6 +54,8 @@ void server_config_init_defaults(ServerConfig *config) {
     config->sustained_pressure_threshold = 3;
     config->latency_caution_ms = 50.0;
     config->latency_overload_ms = 150.0;
+    config->queue_wait_caution_ms = 25.0;
+    config->queue_wait_overload_ms = 100.0;
     config->queue_caution_threshold = 0.70;
     config->queue_overload_threshold = 0.90;
     config->worker_caution_threshold = 0.85;
@@ -134,6 +136,10 @@ int server_config_load_file(ServerConfig *config, const char *filepath) {
             config->latency_caution_ms = atof(val);
         } else if (strcasecmp(key, "latency_overload_ms") == 0) {
             config->latency_overload_ms = atof(val);
+        } else if (strcasecmp(key, "queue_wait_caution_ms") == 0) {
+            config->queue_wait_caution_ms = atof(val);
+        } else if (strcasecmp(key, "queue_wait_overload_ms") == 0) {
+            config->queue_wait_overload_ms = atof(val);
         } else if (strcasecmp(key, "worker_caution_threshold") == 0) {
             config->worker_caution_threshold = atof(val);
         } else if (strcasecmp(key, "worker_overload_threshold") == 0) {
@@ -170,6 +176,8 @@ ServerContext *server_init(const ServerConfig *config) {
     q_cfg.queue_overload_threshold = ctx->config.queue_overload_threshold;
     q_cfg.latency_caution_ms = ctx->config.latency_caution_ms;
     q_cfg.latency_overload_ms = ctx->config.latency_overload_ms;
+    q_cfg.queue_wait_caution_ms = ctx->config.queue_wait_caution_ms;
+    q_cfg.queue_wait_overload_ms = ctx->config.queue_wait_overload_ms;
     q_cfg.worker_caution_threshold = ctx->config.worker_caution_threshold;
     q_cfg.worker_overload_threshold = ctx->config.worker_overload_threshold;
     q_cfg.recovery_samples_required = (ctx->config.recovery_sample_count > 0) ? ctx->config.recovery_sample_count : 5;
@@ -246,7 +254,8 @@ static void *sampler_thread_func(void *arg) {
         metrics_get_snapshot(&ctx->metrics, q_depth, active_w, total_w, &snap);
 
         if (ctx->config.adaptive_control_enabled) {
-            adaptive_controller_update_ex(&ctx->controller, q_ratio, worker_util, snap.p95_latency_ms);
+            adaptive_controller_update_queue_aware(&ctx->controller, q_ratio, worker_util,
+                                                   snap.p95_latency_ms, snap.p95_queue_wait_ms);
         }
     }
 
@@ -349,7 +358,7 @@ int server_run(ServerContext *ctx) {
                     "Content-Type: text/html; charset=utf-8\r\n"
                     "Content-Length: 98\r\n"
                     "Connection: close\r\n"
-                    "Retry-After: 2\r\n"
+                    "Retry-After: 5\r\n"
                     "\r\n"
                     "<html><body><h1>503 Service Unavailable</h1><p>Server queue is fully saturated.</p></body></html>\n";
 

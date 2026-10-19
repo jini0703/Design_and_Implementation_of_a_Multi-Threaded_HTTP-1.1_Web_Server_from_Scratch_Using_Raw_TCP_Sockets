@@ -93,6 +93,21 @@ void metrics_record_request(MetricsCollector *collector, int status_code,
     pthread_mutex_unlock(&collector->lock);
 }
 
+void metrics_record_queue_wait(MetricsCollector *collector, double queue_wait_ms) {
+    if (!collector || queue_wait_ms < 0.0) return;
+
+    pthread_mutex_lock(&collector->lock);
+
+    collector->queue_wait_samples[collector->queue_wait_index].latency_ms = queue_wait_ms;
+    collector->queue_wait_samples[collector->queue_wait_index].timestamp_ns = monotonic_ns();
+    collector->queue_wait_index = (collector->queue_wait_index + 1) % LATENCY_RESERVOIR_SIZE;
+    if (collector->queue_wait_sample_count < LATENCY_RESERVOIR_SIZE) {
+        collector->queue_wait_sample_count++;
+    }
+
+    pthread_mutex_unlock(&collector->lock);
+}
+
 void metrics_get_snapshot(MetricsCollector *collector, size_t current_queue_depth,
                           size_t active_workers, size_t total_workers,
                           MetricsSnapshot *snapshot) {
@@ -102,6 +117,8 @@ void metrics_get_snapshot(MetricsCollector *collector, size_t current_queue_dept
 
     double temp_latencies[LATENCY_RESERVOIR_SIZE];
     size_t count = 0;
+    double temp_queue_waits[LATENCY_RESERVOIR_SIZE];
+    size_t qw_count = 0;
     time_t now = time(NULL);
     uint64_t window_ns = (uint64_t)(LATENCY_WINDOW_SECONDS * (double)NS_PER_SEC);
 
@@ -132,7 +149,7 @@ void metrics_get_snapshot(MetricsCollector *collector, size_t current_queue_dept
     }
     snapshot->requests_per_second = collector->rolling_rps;
 
-    /* Filter latency samples: only retain observations within the recent bounded window */
+    /* Filter request processing latency samples within the recent bounded window */
     size_t total_samples = collector->latency_sample_count;
     if (total_samples > LATENCY_RESERVOIR_SIZE) total_samples = LATENCY_RESERVOIR_SIZE;
 
@@ -140,6 +157,17 @@ void metrics_get_snapshot(MetricsCollector *collector, size_t current_queue_dept
         uint64_t sample_ts = collector->latency_samples[i].timestamp_ns;
         if (now_ns >= sample_ts && (now_ns - sample_ts) <= window_ns) {
             temp_latencies[count++] = collector->latency_samples[i].latency_ms;
+        }
+    }
+
+    /* Filter queue waiting samples within the recent bounded window */
+    size_t total_qw_samples = collector->queue_wait_sample_count;
+    if (total_qw_samples > LATENCY_RESERVOIR_SIZE) total_qw_samples = LATENCY_RESERVOIR_SIZE;
+
+    for (size_t i = 0; i < total_qw_samples; i++) {
+        uint64_t sample_ts = collector->queue_wait_samples[i].timestamp_ns;
+        if (now_ns >= sample_ts && (now_ns - sample_ts) <= window_ns) {
+            temp_queue_waits[qw_count++] = collector->queue_wait_samples[i].latency_ms;
         }
     }
 
@@ -184,6 +212,34 @@ void metrics_get_snapshot(MetricsCollector *collector, size_t current_queue_dept
         snapshot->p95_latency_ms = 0.0;
         snapshot->p99_latency_ms = 0.0;
     }
+
+    snapshot->recent_queue_wait_sample_count = qw_count;
+
+    if (qw_count > 0) {
+        double sum_qw = 0.0;
+        for (size_t i = 0; i < qw_count; i++) {
+            sum_qw += temp_queue_waits[i];
+        }
+        snapshot->avg_queue_wait_ms = sum_qw / (double)qw_count;
+
+        qsort(temp_queue_waits, qw_count, sizeof(double), compare_doubles);
+
+        size_t qw_idx50 = (size_t)(0.50 * (qw_count - 1) + 0.5);
+        size_t qw_idx95 = (size_t)(0.95 * (qw_count - 1) + 0.5);
+        size_t qw_idx99 = (size_t)(0.99 * (qw_count - 1) + 0.5);
+        if (qw_idx50 >= qw_count) qw_idx50 = qw_count - 1;
+        if (qw_idx95 >= qw_count) qw_idx95 = qw_count - 1;
+        if (qw_idx99 >= qw_count) qw_idx99 = qw_count - 1;
+
+        snapshot->median_queue_wait_ms = temp_queue_waits[qw_idx50];
+        snapshot->p95_queue_wait_ms = temp_queue_waits[qw_idx95];
+        snapshot->p99_queue_wait_ms = temp_queue_waits[qw_idx99];
+    } else {
+        snapshot->avg_queue_wait_ms = 0.0;
+        snapshot->median_queue_wait_ms = 0.0;
+        snapshot->p95_queue_wait_ms = 0.0;
+        snapshot->p99_queue_wait_ms = 0.0;
+    }
 }
 
 ssize_t metrics_format_json(const MetricsSnapshot *snapshot, char *buffer, size_t buffer_size) {
@@ -213,6 +269,11 @@ ssize_t metrics_format_json(const MetricsSnapshot *snapshot, char *buffer, size_
         "  \"p99_latency_ms\": %.2f,\n"
         "  \"avg_latency_ms\": %.2f,\n"
         "  \"recent_latency_sample_count\": %zu,\n"
+        "  \"median_queue_wait_ms\": %.2f,\n"
+        "  \"p95_queue_wait_ms\": %.2f,\n"
+        "  \"p99_queue_wait_ms\": %.2f,\n"
+        "  \"avg_queue_wait_ms\": %.2f,\n"
+        "  \"recent_queue_wait_sample_count\": %zu,\n"
         "  \"uptime_seconds\": %ld,\n"
         "  \"snapshot_timestamp\": %ld\n"
         "}\n",
@@ -236,6 +297,11 @@ ssize_t metrics_format_json(const MetricsSnapshot *snapshot, char *buffer, size_
         snapshot->p99_latency_ms,
         snapshot->avg_latency_ms,
         snapshot->recent_latency_sample_count,
+        snapshot->median_queue_wait_ms,
+        snapshot->p95_queue_wait_ms,
+        snapshot->p99_queue_wait_ms,
+        snapshot->avg_queue_wait_ms,
+        snapshot->recent_queue_wait_sample_count,
         (long)(snapshot->snapshot_timestamp - snapshot->server_start_time),
         (long)snapshot->snapshot_timestamp
     );

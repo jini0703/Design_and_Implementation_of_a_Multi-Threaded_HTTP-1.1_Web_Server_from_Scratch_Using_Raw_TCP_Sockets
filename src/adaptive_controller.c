@@ -22,6 +22,12 @@ void adaptive_controller_init(QlaacController *controller, const QlaacConfig *co
     if (controller->config.recovery_samples_required == 0) {
         controller->config.recovery_samples_required = 3;
     }
+    if (controller->config.queue_wait_caution_ms <= 0.0) {
+        controller->config.queue_wait_caution_ms = 25.0;
+    }
+    if (controller->config.queue_wait_overload_ms <= 0.0) {
+        controller->config.queue_wait_overload_ms = 100.0;
+    }
     controller->current_state = QLAAC_STATE_NORMAL;
     controller->consecutive_healthy_samples = 0;
     controller->consecutive_pressure_samples = 0;
@@ -39,10 +45,11 @@ const char *adaptive_controller_state_name(QlaacState state) {
     }
 }
 
-QlaacState adaptive_controller_update_ex(QlaacController *controller,
-                                         double queue_occupancy_ratio,
-                                         double worker_utilization_ratio,
-                                         double p95_latency_ms) {
+QlaacState adaptive_controller_update_queue_aware(QlaacController *controller,
+                                                  double queue_occupancy_ratio,
+                                                  double worker_utilization_ratio,
+                                                  double p95_processing_latency_ms,
+                                                  double p95_queue_wait_ms) {
     if (!controller) return QLAAC_STATE_NORMAL;
     if (!controller->config.enabled) return QLAAC_STATE_NORMAL;
 
@@ -60,22 +67,38 @@ QlaacState adaptive_controller_update_ex(QlaacController *controller,
     bool queue_critical = (cfg->queue_overload_threshold > 0.0 &&
                            queue_occupancy_ratio >= cfg->queue_overload_threshold);
     bool latency_elevated = (cfg->latency_caution_ms > 0.0 &&
-                             p95_latency_ms > 0.0 &&
-                             p95_latency_ms >= cfg->latency_caution_ms);
+                             p95_processing_latency_ms > 0.0 &&
+                             p95_processing_latency_ms >= cfg->latency_caution_ms);
     bool latency_critical = (cfg->latency_overload_ms > 0.0 &&
-                             p95_latency_ms > 0.0 &&
-                             p95_latency_ms >= cfg->latency_overload_ms);
+                             p95_processing_latency_ms > 0.0 &&
+                             p95_processing_latency_ms >= cfg->latency_overload_ms);
+    /*
+     * Queue-wait duration represents active operational pressure only when
+     * connections are actually waiting in the queue (occupancy >= 20%).
+     * When the queue has drained, lingering reservoir samples from past bursts
+     * must not block recovery or falsely trigger overload.
+     */
+    bool has_queue_presence = (queue_occupancy_ratio >= 0.20);
+    bool queue_wait_elevated = (cfg->queue_wait_caution_ms > 0.0 &&
+                                p95_queue_wait_ms > 0.0 &&
+                                p95_queue_wait_ms >= cfg->queue_wait_caution_ms &&
+                                has_queue_presence);
+    bool queue_wait_critical = (cfg->queue_wait_overload_ms > 0.0 &&
+                                p95_queue_wait_ms > 0.0 &&
+                                p95_queue_wait_ms >= cfg->queue_wait_overload_ms &&
+                                has_queue_presence);
 
     /*
      * Track sustained pressure:
-     * Moderate stress occurs when workers are saturated with non-trivial queue depth (>= 50%),
-     * when workers are saturated with elevated latency, or when both queue and latency are elevated.
-     * Note: Worker saturation alone with nearly empty queue (< 50%) and low latency (< caution)
-     * is an early warning signal, not sustained overload pressure.
+     * Compound pressure occurs when:
+     * - Workers are saturated with non-trivial queue backing up (>= 50%).
+     * - Queue is growing (>= 70%) with elevated queue-wait or processing latency.
+     * Note: Saturated workers alone with a moderate queue (< 50%) and healthy latency
+     * represents healthy system throughput, not sustained overload pressure.
      */
-    bool sustained_pressure_candidate = (worker_saturated && queue_occupancy_ratio >= 0.50) ||
-                                        (worker_saturated && latency_elevated) ||
-                                        (queue_growing && latency_elevated);
+    bool sustained_pressure_candidate =
+        (worker_saturated && queue_occupancy_ratio >= 0.50) ||
+        (queue_growing && (queue_wait_elevated || latency_elevated));
 
     if (sustained_pressure_candidate) {
         controller->consecutive_pressure_samples++;
@@ -88,40 +111,56 @@ QlaacState adaptive_controller_update_ex(QlaacController *controller,
 
     /*
      * OVERLOAD Condition:
-     * 1. Critical queue occupancy (queue buffer almost full).
-     * 2. Critical p95 latency (SLA breach).
-     * 3. Worker saturation coupled with a growing queue (queue >= caution threshold).
-     * 4. Worker saturation coupled with elevated tail latency (latency >= caution threshold).
-     * 5. Sustained pressure over multiple consecutive sampling windows.
+     * 1. Critical queue occupancy (queue buffer almost full >= 90%).
+     * 2. Critical processing latency (SLA breach >= 150 ms).
+     * 3. Worker saturation coupled with a growing queue (queue >= 70%).
+     * 4. Sustained compound pressure over multiple consecutive sampling windows.
+     * 5. Critical queue-wait latency when queue is backing up (>= 70%) or
+     *    when already in OVERLOAD (blocking premature recovery).
      *
-     * Note: Worker saturation alone with a nearly empty queue and low p95 latency
-     * acts as an early warning signal (CAUTION) and does NOT trigger OVERLOAD.
+     * Note: When starting from NORMAL or CAUTION, critical queue-wait with a moderate
+     * queue (< 70%) enters CAUTION first, applying keep-alive fair sharing to rotate
+     * workers and drain the queue without shedding traffic.
      */
+    bool queue_wait_overload = queue_wait_critical &&
+                               (queue_growing || (controller->current_state == QLAAC_STATE_OVERLOAD));
+
     bool is_overload_condition = queue_critical ||
                                  latency_critical ||
+                                 queue_wait_overload ||
                                  (worker_saturated && queue_growing) ||
-                                 (worker_saturated && latency_elevated) ||
                                  sustained_pressure_overload;
 
     /*
      * CAUTION Condition:
-     * Worker utilization at or above caution threshold, worker saturation alone,
-     * queue occupancy >= caution threshold, or p95 latency >= caution threshold.
+     * Evidence of actual queue/latency pressure:
+     * 1. Queue occupancy >= caution threshold (>= 70%).
+     * 2. Observed queue-wait duration >= caution threshold (>= 25 ms).
+     * 3. Processing latency >= caution threshold (>= 50 ms).
+     * 4. Worker saturation/caution coupled with non-trivial queue depth (>= 50%).
+     *
+     * Rule: High worker utilization alone when the queue is short (< 50%) and
+     * queue wait and latency are healthy MUST REMAIN in NORMAL.
      */
+    bool worker_stress_with_queue = (worker_caution || worker_saturated) &&
+                                    (queue_occupancy_ratio >= 0.50 || queue_wait_elevated || latency_elevated);
+
     bool is_caution_condition = is_overload_condition ||
                                 queue_growing ||
+                                queue_wait_elevated ||
+                                queue_wait_critical ||
                                 latency_elevated ||
-                                worker_caution ||
-                                worker_saturated;
+                                worker_stress_with_queue;
 
     if (is_overload_condition) {
         if (controller->current_state != QLAAC_STATE_OVERLOAD) {
             controller->total_overload_transitions++;
             controller->current_state = QLAAC_STATE_OVERLOAD;
             log_msg(LOG_LEVEL_WARN,
-                    "[QLAAC] Transition %s -> OVERLOAD (queue=%.2f, worker_util=%.2f, p95=%.2f ms, sustained=%zu)",
+                    "[QLAAC] Transition %s -> OVERLOAD (queue=%.2f, worker_util=%.2f, proc_p95=%.2f ms, qw_p95=%.2f ms, sustained=%zu)",
                     adaptive_controller_state_name(old_state),
-                    queue_occupancy_ratio, worker_utilization_ratio, p95_latency_ms,
+                    queue_occupancy_ratio, worker_utilization_ratio,
+                    p95_processing_latency_ms, p95_queue_wait_ms,
                     controller->consecutive_pressure_samples);
         }
         controller->consecutive_healthy_samples = 0;
@@ -133,15 +172,17 @@ QlaacState adaptive_controller_update_ex(QlaacController *controller,
                 controller->current_state = QLAAC_STATE_CAUTION;
                 controller->consecutive_healthy_samples = 0;
                 log_msg(LOG_LEVEL_INFO,
-                        "[QLAAC] Recovery transition OVERLOAD -> CAUTION (queue=%.2f, worker_util=%.2f, p95=%.2f ms)",
-                        queue_occupancy_ratio, worker_utilization_ratio, p95_latency_ms);
+                        "[QLAAC] Recovery transition OVERLOAD -> CAUTION (queue=%.2f, worker_util=%.2f, proc_p95=%.2f ms, qw_p95=%.2f ms)",
+                        queue_occupancy_ratio, worker_utilization_ratio,
+                        p95_processing_latency_ms, p95_queue_wait_ms);
             }
         } else if (controller->current_state == QLAAC_STATE_NORMAL) {
             controller->current_state = QLAAC_STATE_CAUTION;
             controller->consecutive_healthy_samples = 0;
             log_msg(LOG_LEVEL_WARN,
-                    "[QLAAC] Transition NORMAL -> CAUTION (queue=%.2f, worker_util=%.2f, p95=%.2f ms)",
-                    queue_occupancy_ratio, worker_utilization_ratio, p95_latency_ms);
+                    "[QLAAC] Transition NORMAL -> CAUTION (queue=%.2f, worker_util=%.2f, proc_p95=%.2f ms, qw_p95=%.2f ms)",
+                    queue_occupancy_ratio, worker_utilization_ratio,
+                    p95_processing_latency_ms, p95_queue_wait_ms);
         } else {
             /* Already in CAUTION */
             controller->consecutive_healthy_samples = 0;
@@ -154,8 +195,9 @@ QlaacState adaptive_controller_update_ex(QlaacController *controller,
                 controller->current_state = QLAAC_STATE_CAUTION;
                 controller->consecutive_healthy_samples = 0;
                 log_msg(LOG_LEVEL_INFO,
-                        "[QLAAC] Recovery transition OVERLOAD -> CAUTION (queue=%.2f, worker_util=%.2f, p95=%.2f ms)",
-                        queue_occupancy_ratio, worker_utilization_ratio, p95_latency_ms);
+                        "[QLAAC] Recovery transition OVERLOAD -> CAUTION (queue=%.2f, worker_util=%.2f, proc_p95=%.2f ms, qw_p95=%.2f ms)",
+                        queue_occupancy_ratio, worker_utilization_ratio,
+                        p95_processing_latency_ms, p95_queue_wait_ms);
             }
         } else if (controller->current_state == QLAAC_STATE_CAUTION) {
             controller->consecutive_healthy_samples++;
@@ -163,8 +205,9 @@ QlaacState adaptive_controller_update_ex(QlaacController *controller,
                 controller->current_state = QLAAC_STATE_NORMAL;
                 controller->consecutive_healthy_samples = 0;
                 log_msg(LOG_LEVEL_INFO,
-                        "[QLAAC] Recovery transition CAUTION -> NORMAL (queue=%.2f, worker_util=%.2f, p95=%.2f ms)",
-                        queue_occupancy_ratio, worker_utilization_ratio, p95_latency_ms);
+                        "[QLAAC] Recovery transition CAUTION -> NORMAL (queue=%.2f, worker_util=%.2f, proc_p95=%.2f ms, qw_p95=%.2f ms)",
+                        queue_occupancy_ratio, worker_utilization_ratio,
+                        p95_processing_latency_ms, p95_queue_wait_ms);
             }
         } else {
             controller->current_state = QLAAC_STATE_NORMAL;
@@ -177,10 +220,25 @@ QlaacState adaptive_controller_update_ex(QlaacController *controller,
     return state;
 }
 
+QlaacState adaptive_controller_update_ex(QlaacController *controller,
+                                         double queue_occupancy_ratio,
+                                         double worker_utilization_ratio,
+                                         double p95_latency_ms) {
+    return adaptive_controller_update_queue_aware(controller,
+                                                  queue_occupancy_ratio,
+                                                  worker_utilization_ratio,
+                                                  p95_latency_ms,
+                                                  0.0);
+}
+
 QlaacState adaptive_controller_update(QlaacController *controller,
                                       double queue_occupancy_ratio,
                                       double p95_latency_ms) {
-    return adaptive_controller_update_ex(controller, queue_occupancy_ratio, 0.0, p95_latency_ms);
+    return adaptive_controller_update_queue_aware(controller,
+                                                  queue_occupancy_ratio,
+                                                  0.0,
+                                                  p95_latency_ms,
+                                                  0.0);
 }
 
 QlaacDecision adaptive_controller_evaluate(QlaacController *controller) {

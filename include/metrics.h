@@ -54,11 +54,16 @@ typedef struct {
     size_t total_workers;
     double requests_per_second;          /**< Rolling-window throughput over recent sampling interval */
     double lifetime_requests_per_second; /**< Cumulative lifetime throughput: total_requests / uptime */
-    double median_latency_ms;           /**< p50 latency over recent bounded window */
-    double p95_latency_ms;              /**< p95 latency over recent bounded window */
-    double p99_latency_ms;              /**< p99 latency over recent bounded window */
-    double avg_latency_ms;              /**< Mean latency over recent bounded window */
+    double median_latency_ms;           /**< p50 processing latency over recent bounded window */
+    double p95_latency_ms;              /**< p95 processing latency over recent bounded window */
+    double p99_latency_ms;              /**< p99 processing latency over recent bounded window */
+    double avg_latency_ms;              /**< Mean processing latency over recent bounded window */
     size_t recent_latency_sample_count; /**< Number of valid latency samples within recent bounded window */
+    double median_queue_wait_ms;        /**< p50 queue waiting duration over recent bounded window */
+    double p95_queue_wait_ms;           /**< p95 queue waiting duration over recent bounded window */
+    double p99_queue_wait_ms;           /**< p99 queue waiting duration over recent bounded window */
+    double avg_queue_wait_ms;           /**< Mean queue waiting duration over recent bounded window */
+    size_t recent_queue_wait_sample_count; /**< Number of valid queue wait samples within recent bounded window */
     time_t server_start_time;
     time_t snapshot_timestamp;
 } MetricsSnapshot;
@@ -80,6 +85,9 @@ typedef struct {
     LatencySample latency_samples[LATENCY_RESERVOIR_SIZE];
     size_t latency_sample_count;
     size_t latency_index;
+    LatencySample queue_wait_samples[LATENCY_RESERVOIR_SIZE];
+    size_t queue_wait_sample_count;
+    size_t queue_wait_index;
     time_t server_start_time;
     uint64_t last_window_requests;
     uint64_t last_window_timestamp_ns;
@@ -125,6 +133,13 @@ void metrics_record_overload_response(MetricsCollector *collector, int status_co
  */
 void metrics_record_request(MetricsCollector *collector, int status_code,
                             double latency_ms, size_t bytes_read, size_t bytes_written);
+
+/**
+ * @brief Record queue wait duration experienced by a connection before worker dequeue.
+ * @param collector Target collector.
+ * @param queue_wait_ms Time in milliseconds spent waiting in the connection queue.
+ */
+void metrics_record_queue_wait(MetricsCollector *collector, double queue_wait_ms);
 
 /**
  * @brief Capture a thread-safe atomic snapshot of current runtime metrics.

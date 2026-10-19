@@ -36,7 +36,7 @@ Features custom zero-copy streaming request parsing, a thread-safe bounded circu
 
 | Registration Number | Student Name | GitHub Profile / Contact |
 | :---: | :---: | :---: |
-| **24BCE0702** | **Yash Pradhan** | Team Contributor |
+| **24BCE0702** | **[Yash Pradhan](https://github.com/yoswinner)** | [yoswinner](https://github.com/yoswinner) |
 | **24BCE0714** | **Anjini Pandey** | [jini0703](https://github.com/jini0703) |
 
 *Course:* **Computer Networks Lab (BCSE308P)**
@@ -514,7 +514,7 @@ All course deliverables are tracked in [`deliverables/`](deliverables/):
 This project was developed for the **Computer Networks Laboratory Course (BCSE308P / CS-504)** during the **Fall Semester 2026–27**.
 
 ### Project Authors
-- **Yash Pradhan (Registration Number: 24BCE0702)**
+- **[Yash Pradhan](https://github.com/yoswinner) (Registration Number: 24BCE0702)**
 - **Anjini Pandey (Registration Number: 24BCE0714)**
 
 ### License

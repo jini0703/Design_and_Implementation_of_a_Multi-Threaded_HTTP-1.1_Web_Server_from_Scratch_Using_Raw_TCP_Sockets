@@ -115,6 +115,11 @@ int router_dispatch(ServerContext *ctx, const HttpRequest *req, HttpResponse *re
             "  \"p99_latency_ms\": %.2f,\n"
             "  \"avg_latency_ms\": %.2f,\n"
             "  \"recent_latency_sample_count\": %zu,\n"
+            "  \"median_queue_wait_ms\": %.2f,\n"
+            "  \"p95_queue_wait_ms\": %.2f,\n"
+            "  \"p99_queue_wait_ms\": %.2f,\n"
+            "  \"avg_queue_wait_ms\": %.2f,\n"
+            "  \"recent_queue_wait_sample_count\": %zu,\n"
             "  \"qlaac_enabled\": %s,\n"
             "  \"qlaac_state\": \"%s\",\n"
             "  \"qlaac_overload_transitions\": %llu,\n"
@@ -143,6 +148,11 @@ int router_dispatch(ServerContext *ctx, const HttpRequest *req, HttpResponse *re
             snap.p99_latency_ms,
             snap.avg_latency_ms,
             snap.recent_latency_sample_count,
+            snap.median_queue_wait_ms,
+            snap.p95_queue_wait_ms,
+            snap.p99_queue_wait_ms,
+            snap.avg_queue_wait_ms,
+            snap.recent_queue_wait_sample_count,
             ctx->config.adaptive_control_enabled ? "true" : "false",
             qlaac_state_str,
             (unsigned long long)qlaac_trans,

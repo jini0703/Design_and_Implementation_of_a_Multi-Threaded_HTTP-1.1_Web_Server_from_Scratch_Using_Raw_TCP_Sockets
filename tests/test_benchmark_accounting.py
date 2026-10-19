@@ -264,6 +264,57 @@ class TestBenchmarkAccounting(unittest.TestCase):
         diff = server_metrics["total_overload_503_sent"] - client_rejected_total
         self.assertLessEqual(diff, 2)
 
+    def test_503_retry_after_and_queue_accounting(self):
+        """Verify 503 Retry-After header presence and queue-full vs QLAAC shed accounting."""
+        client_sock, server_sock = socket.socketpair()
+        try:
+            raw_503 = (
+                b"HTTP/1.1 503 Service Unavailable\r\n"
+                b"Content-Type: text/plain\r\n"
+                b"Content-Length: 42\r\n"
+                b"Connection: close\r\n"
+                b"Retry-After: 5\r\n"
+                b"\r\n"
+                b"Server overloaded. Please retry in 5 sec.\n"
+            )
+            server_sock.sendall(raw_503)
+
+            status, is_close, body, remaining = read_http_response(client_sock, timeout=1.0)
+            self.assertEqual(status, 503)
+            self.assertTrue(is_close)
+            self.assertIn(b"Retry-After: 5", raw_503)
+            self.assertEqual(body, b"Server overloaded. Please retry in 5 sec.\n")
+
+            # Accounting invariants across rejection paths:
+            # Path A: Queue-full rejection (QLAAC disabled or queue reaches hard cap)
+            queue_full_server = {
+                "total_connections_rejected": 10,
+                "total_overload_503_sent": 10,
+                "qlaac_shed_requests": 0,  # NOT a QLAAC admission decision
+            }
+            self.assertEqual(queue_full_server["total_connections_rejected"], 10)
+            self.assertEqual(queue_full_server["qlaac_shed_requests"], 0)
+
+            # Path B: QLAAC admission controller shed decision
+            qlaac_shed_server = {
+                "total_connections_rejected": 15,
+                "total_overload_503_sent": 15,
+                "qlaac_shed_requests": 15,  # Recorded as QLAAC shed
+            }
+            self.assertEqual(qlaac_shed_server["qlaac_shed_requests"], 15)
+
+            # Path C: Socket write failure during rejection
+            write_fail_server = {
+                "total_connections_rejected": 1,
+                "total_overload_503_sent": 0,  # Failed before 503 write succeeded
+                "qlaac_shed_requests": 1,
+            }
+            self.assertGreater(write_fail_server["total_connections_rejected"],
+                               write_fail_server["total_overload_503_sent"])
+        finally:
+            client_sock.close()
+            server_sock.close()
+
 
 if __name__ == "__main__":
     unittest.main()

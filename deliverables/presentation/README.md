@@ -23,6 +23,7 @@ HTTP11_Web_Server_Project_Presentation.pptx
 > **Verification Status: COMPLETED & VERIFIED**
 > The comprehensive 18-slide academic PowerPoint slide deck has been authored and verified in this directory:
 > - **Final Presentation**: [`HTTP11_Web_Server_Project_Presentation.pptx`](HTTP11_Web_Server_Project_Presentation.pptx) (18 slides, 16:9 widescreen, custom dark systems-engineering palette)
+> - **Revised Presentation (Oral Defense)**: [`HTTP11_Web_Server_QLAAC_Presentation_REVISED.pptx`](HTTP11_Web_Server_QLAAC_Presentation_REVISED.pptx) and [`HTTP11_Web_Server_QLAAC_Presentation_REVISED.pdf`](HTTP11_Web_Server_QLAAC_Presentation_REVISED.pdf)
 > - **Build Generator**: [`generate_presentation.py`](generate_presentation.py)
 >
 > All 18 slides include structured layout cards, technical bullet points, empirical benchmark comparison charts, live dashboard screenshots, complete team attribution, and full oral defense speaker notes. No placeholder slides.

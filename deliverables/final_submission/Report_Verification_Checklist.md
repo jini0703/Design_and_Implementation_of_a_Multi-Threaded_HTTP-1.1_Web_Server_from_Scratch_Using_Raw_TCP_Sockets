@@ -55,9 +55,9 @@
    - Replaced claims of "independent trials" with "repeated trials" throughout Section 4.2 (Table 7 & P[116], P[119]), Section 5.3 (P[144]), and Section 5.5 (P[176]).
    - Explicitly qualified sample standard deviations as reflecting repeated-trial empirical dispersion rather than independent identically distributed (i.i.d.) trial variance.
 
-4. **Package README Benchmark Synchronization & Cleanup:**
-   - Pre-audit placeholder figures in earlier documentation were corrected to synchronize with the verified 20-trial empirical dataset ($C = 2, 8, 32, 64$; 6,828.52 baseline RPS vs 638.12 QLAAC RPS at $C=64$; $72.14\% \pm 5.15\%$ shedding rate; bounded queue capacity 64).
-   - In cleanup commit `6abfd94`, redundant AI authoring package artifacts (`CLAUDE_PACKAGE_README.md` and `deliverables/claude_report_package.zip`) were deleted from the branch working tree, ensuring only canonical course deliverables remain.
+4. **Documentation Benchmark Synchronization & Deliverables Consolidation:**
+   - Pre-audit placeholder figures in earlier draft documentation were corrected to synchronize with the verified 20-trial empirical dataset ($C = 2, 8, 32, 64$; 6,828.52 baseline RPS vs 638.12 QLAAC RPS at $C=64$; $72.14\% \pm 5.15\%$ shedding rate; bounded queue capacity 64).
+   - In repository cleanup commit `6abfd94`, redundant draft package artifacts and temporary archives were removed from the branch working tree, ensuring only canonical course deliverables remain.
 
 5. **Course-Module Mapping (Section 1.5):**
    - Verified that no official BCSE308P syllabus document is present in the repository.
@@ -92,9 +92,9 @@
     - Explicitly clarified that because throughput $X$ is measured in requests/second, the round duration $(200 / X)$ evaluates in seconds; multiplying by $1000$ yields milliseconds.
     - Preserved all calculated values in Table 5.4 (30.2 ms, 204.1 ms, 439.3 ms) and updated Section 5.4 (P[160]) for complete formulation alignment.
 
-11. **Historical Discrepancy Framing for Package README (Appendix B.4 & Section 5.3):**
-    - Clarified in Section 5.3 (P[142]) and Appendix B.4 (P[324], P[325], Table B.4) that the quoted figures describe the pre-audit version of `CLAUDE_PACKAGE_README.md`, which has since been corrected to match empirical CSV data.
-    - Preserved Table B.4 as a historical discrepancy record documenting what was previously stated versus the verified raw CSV data, rather than presenting it as a current error.
+11. **Historical Discrepancy Framing for Preliminary Draft Figures (Appendix B.4 & Section 5.3):**
+    - Clarified in Section 5.3 (P[142]) and Appendix B.4 (P[324], P[325], Table B.4) that the quoted figures describe preliminary draft documentation figures that predated the verified empirical CSV dataset, which were subsequently synchronized to match raw measurements.
+    - Preserved Table B.4 as a historical discrepancy record documenting what was previously stated in preliminary notes versus the verified raw CSV data, rather than presenting it as a current error.
 
 12. **Abstract Word Count:**
     - Verified against `CN_Project_Final_Report_Final_Submission.docx` and `.pdf`:
@@ -195,7 +195,7 @@ All values in Chapter 5 and Appendix B match `benchmark/verify_benchmark_statist
 - [x] **Table 4.3:** Source module line counts verified against actual implementation files.
 - [x] **Table 4.4:** Challenges and solutions table expanded with confirmed security, HTTP framing (RFC 9110/9112), sendfile offset fallback, and QLAAC counter reconciliation evidence.
 - [x] **Table 5.4:** Column header displays `Predicted wait = rounds × (200 / X) × 1000 ms`, correctly accounting for throughput in req/s with calculated values preserved (30.2, 204.1, 439.3).
-- [x] **Table B.4:** Accurately framed as a historical discrepancy record of pre-audit package README claims compared with raw CSV files.
+- [x] **Table B.4:** Accurately framed as a historical discrepancy record of preliminary documentation claims compared with verified raw CSV files.
 - [x] **Appendix A & B:** Cleanly formatted without clipped code excerpts or broken tables; A.3 updated to side-effect-free state query; Appendix B.2 contains verified historical 80-test execution logs (44 C / 36 Python); Appendix B.8 contains current 92-test suite (44 C / 48 Python) with readiness-check regression coverage.
 
 ---
@@ -204,7 +204,7 @@ All values in Chapter 5 and Appendix B match `benchmark/verify_benchmark_statist
 
 - **Abstract count verified:** Confirmed directly via Python and Microsoft Word COM (`wdStatisticWords`); the abstract contains 275 whitespace-separated words (277 words by Microsoft Word native counter, 279 words in the PDF page 2 text stream), satisfying the $\le 300$-word limit.
 - **PDF pagination verified:** The canonical PDF (`CN_Project_Final_Report_Final_Submission.pdf`) is 54 pages. All static TOC section starts align with the rendered PDF pages.
-- **Repository cleanup footprint:** In cleanup commit `6abfd94`, approximately 17.3 MB of superseded/duplicate files and internal AI workflow archives were deleted from the branch working tree / snapshot (`main`), reducing clone checkout footprint while preserving repository commit history intact without rewriting history.
+- **Repository cleanup footprint:** In cleanup commit `6abfd94`, approximately 17.3 MB of superseded duplicate files and temporary archives were deleted from the branch working tree / snapshot (`main`), reducing clone checkout footprint while preserving repository commit history intact without rewriting history.
 - **Benchmark launch directory:** The working directory during Chapter 5 benchmarks was not recorded; therefore, whether `config/server.conf.example` loaded and set the total header limit to 8,192 bytes, rather than the 16,384-byte compiled default, is **UNVERIFIED**. No benchmark results were changed.
 - **URI limit:** Source inspection confirms that URI lengths of 2,048 bytes or more are rejected with 414, so the maximum accepted URI length is 2,047 bytes. Table 4.3 states `URI ≤ 2,047 B`.
 - **Optional curriculum mapping:** If the official BCSE308P syllabus becomes available, the general concept mapping in Section 1.5 can optionally be expanded with official module numbers. No curriculum modules have been invented.

@@ -22,7 +22,7 @@ HTTP11_Web_Server_Project_Report.pdf
 
 > **Verification Status: COMPLETED & VERIFIED**
 > The comprehensive 13-page academic technical report has been compiled and verified in this directory:
-> - **Final PDF Report**: [`HTTP11_Web_Server_Project_Report.pdf`](HTTP11_Web_Server_Project_Report.pdf) (13 pages, 1.92 MB, 6 embedded high-resolution figures)
+> - **Preliminary PDF Report (Historical)**: [`HTTP11_Web_Server_Project_Report.pdf`](HTTP11_Web_Server_Project_Report.pdf) (13 pages, early draft retained for historical project provenance; the canonical final submission report is located in [`deliverables/final_submission/CN_Project_Final_Report_Final_Submission.pdf`](../final_submission/CN_Project_Final_Report_Final_Submission.pdf))
 > - **Source Markdown**: [`HTTP11_Web_Server_Project_Report.md`](HTTP11_Web_Server_Project_Report.md)
 > - **Build Generator**: [`generate_report.py`](generate_report.py)
 >

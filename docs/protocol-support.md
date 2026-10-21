@@ -33,17 +33,17 @@ request-line = method SP request-target SP HTTP-version CRLF
 - **Method**: Must consist of token characters (`ALPHA / DIGIT / special`).
 - **Request-Target**: Must begin with `/` (origin-form). Targets exceeding `HTTP_MAX_URI_LENGTH` (2,048 bytes) immediately trigger `414 URI Too Long`.
 - **HTTP-Version**: Server strictly verifies `HTTP/1.1` (with backward tolerance for `HTTP/1.0`). Unsupported version tokens trigger `505 HTTP Version Not Supported` or `400 Bad Request`.
-- **Line Terminator**: Strict requirement for CRLF (`\r\n`). Bare LF (`\n`) is rejected to mitigate request smuggling ambiguities.
+- **Line Terminator**: Strict requirement for CRLF (`\r\n`). Bare CR outside the message body is prohibited (RFC 9112 §2.2). Although RFC 9112 §2.2 permits recipients to recognize a single LF as a line terminator, bare LF (`\n`) is rejected here as an intentional defensive implementation choice to eliminate request smuggling ambiguities (RFC 9112 §5.2 obsoletes line folding).
 
 ### 3.2 Header Field Semantics
 - **Field Grammar**: `field-name ":" OWS field-value OWS CRLF`
 - **Case-Insensitivity**: Header field names are parsed case-insensitively using `strcasecmp()` (e.g., `content-type`, `Content-Type`, and `CONTENT-TYPE` match identically).
 - **Whitespace Handling**: Leading and trailing optional whitespace (OWS) around field values is stripped.
-- **Header Limits**: Maximum 64 headers per request. Cumulative header size must not exceed `max_header_size` (default: 8,192 bytes); violations trigger `431 Request Header Fields Too Large` or `400 Bad Request`.
+- **Header Limits**: Maximum 64 headers per request. Cumulative header size must not exceed `max_header_size` (default: 8,192 bytes); individual header names and values are bounded per RFC 9110 §5.4 (Field Limits). Violations trigger `431 Request Header Fields Too Large` (RFC 6585) or `400 Bad Request`.
 
 ### 3.3 Message Body Framing & Bounds
 - **Content-Length**: Must be a valid non-negative integer. If `Content-Length` exceeds `max_body_size`, the server rejects the request with `413 Payload Too Large`.
-- **Framing Ambiguity**: If multiple conflicting `Content-Length` headers are supplied, the request is immediately rejected with `400 Bad Request` (RFC 9112 Section 6.1).
+- **Framing Ambiguity**: If multiple conflicting `Content-Length` headers are supplied, the request is immediately rejected with `400 Bad Request` (RFC 9112 Section 6.2).
 - **Transfer-Encoding**: Chunked transfer coding is deferred to future extensions. If a client transmits `Transfer-Encoding: chunked`, the initial implementation returns `501 Not Implemented` rather than attempting unsafe framing guesses.
 
 ---

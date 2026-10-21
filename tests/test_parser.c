@@ -265,7 +265,9 @@ static void test_uri_query_parsing(void) {
 }
 
 static void test_bare_newline_in_header_rejected(void) {
-    /* RFC 9112 §5.2: Header field values must not contain bare CR or LF */
+    /* RFC 9112 §2.2 prohibits bare CR outside content (must reject with 400); rejecting
+     * bare LF within field lines is this server's defensive choice to prevent request
+     * smuggling (RFC 9112 §5.2 covers obsolete line folding). */
     const char *raw = "GET / HTTP/1.1\r\nHost: localhost\nX-Smuggled: 1\r\n\r\n";
     size_t consumed = 0;
     HttpRequest req;
@@ -280,7 +282,7 @@ static void test_bare_newline_in_header_rejected(void) {
 }
 
 static void test_oversized_header_field_rejected(void) {
-    /* RFC 9112 §5.1: A field exceeding buffer limits must return 431 Headers Too Large */
+    /* RFC 9110 §5.4 (Field Limits): A field exceeding server-defined limits must return 431 Request Header Fields Too Large (RFC 6585) */
     char long_val[3000];
     memset(long_val, 'A', sizeof(long_val) - 1);
     long_val[sizeof(long_val) - 1] = '\0';

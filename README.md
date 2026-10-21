@@ -4,7 +4,7 @@
 [![Platform](https://img.shields.io/badge/Platform-POSIX.1--2008%20%2F%20Linux%20x86__64-FCC624?logo=linux&logoColor=black)](./)
 [![RFC Compliance](https://img.shields.io/badge/RFC-9112%20%7C%209110-blue)](https://www.rfc-editor.org/rfc/rfc9112.html)
 [![Verification](https://img.shields.io/badge/Tests-72%2F72%20Passing%20(100%25)-success)](deliverables/final_submission/Report_Verification_Checklist.md)
-[![Course](https://img.shields.io/badge/Course-BCSE308P%20Computer%20Networks-red)](deliverables/final_submission/CN_Project_Final_Report.pdf)
+[![Course](https://img.shields.io/badge/Course-BCSE308P%20Computer%20Networks-red)](deliverables/final_submission/CN_Project_Final_Report_Final_Submission.pdf)
 
 A high-performance, zero-dependency academic systems implementation of an RFC 9112 compliant **HTTP/1.1 Web Server built strictly from scratch** using low-level POSIX TCP Berkeley sockets (`AF_INET`, `SOCK_STREAM`) and POSIX threads (`pthreads`).
 
@@ -285,7 +285,6 @@ pkill -INT server
 
 ```
 .
-├── CLAUDE_PACKAGE_README.md       # Orientation guide for Claude academic report generation
 ├── README.md                      # [This Document] Primary project landing page & specification
 ├── Makefile                       # C17 compilation rules, compiler flags, and test runners
 ├── LICENSE                        # Project MIT License (Yash Pradhan & Anjini Pandey)
@@ -361,10 +360,9 @@ pkill -INT server
 │
 └── deliverables/                  # Academic course deliverables
     ├── final_submission/          # Canonical final project submission
-    │   ├── CN_Project_Final_Report.pdf  # Canonical 42-page final project report
-    │   ├── CN_Project_Final_Report.docx # Formatted source document
+    │   ├── CN_Project_Final_Report_Final_Submission.pdf  # Corrected final project report (PDF)
+    │   ├── CN_Project_Final_Report_Final_Submission.docx # Corrected final report source (DOCX)
     │   └── Report_Verification_Checklist.md # Comprehensive verification checklist
-    ├── claude_report_package.zip  # Validated archive package for faculty report generation
     ├── report/                    # Preliminary academic technical report
     │   ├── HTTP11_Web_Server_Project_Report.pdf  # Preliminary 13-page PDF report
     │   ├── HTTP11_Web_Server_Project_Report.md   # Editable source Markdown
@@ -478,14 +476,12 @@ Authentic screenshots captured directly from the running C17 server instance at 
 
 All course deliverables are tracked in [`deliverables/`](deliverables/):
 
-- **Canonical Final Technical Report (PDF):** [`deliverables/final_submission/CN_Project_Final_Report.pdf`](deliverables/final_submission/CN_Project_Final_Report.pdf) (42 pages, verified IEEE/ACM format, complete empirical tables, 72-test validation, and reconciled QLAAC telemetry semantics).
-- **Canonical Final Report Source (DOCX):** [`deliverables/final_submission/CN_Project_Final_Report.docx`](deliverables/final_submission/CN_Project_Final_Report.docx).
+- **Canonical Final Technical Report (PDF):** [`deliverables/final_submission/CN_Project_Final_Report_Final_Submission.pdf`](deliverables/final_submission/CN_Project_Final_Report_Final_Submission.pdf) (Corrected final project report with Table 5.3 font fix, Appendix B.8 formatting, timeout wording, and RFC-reference corrections).
+- **Canonical Final Report Source (DOCX):** [`deliverables/final_submission/CN_Project_Final_Report_Final_Submission.docx`](deliverables/final_submission/CN_Project_Final_Report_Final_Submission.docx).
 - **Report Verification Checklist:** [`deliverables/final_submission/Report_Verification_Checklist.md`](deliverables/final_submission/Report_Verification_Checklist.md).
 - **Preliminary Technical Report (Historical):** [`deliverables/report/HTTP11_Web_Server_Project_Report.pdf`](deliverables/report/HTTP11_Web_Server_Project_Report.pdf) (13 pages, early submission draft).
 - **Preliminary Source Markdown Report:** [`deliverables/report/HTTP11_Web_Server_Project_Report.md`](deliverables/report/HTTP11_Web_Server_Project_Report.md).
 - **Academic Slide Deck:** [`deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx`](deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx) (18 slides, 16:9 widescreen, custom dark palette, embedded benchmark plots, and speaker notes).
-- **Claude Report Package ZIP:** [`deliverables/claude_report_package.zip`](deliverables/claude_report_package.zip) (Self-contained archive for faculty report generation).
-- **Package Orientation Guide:** [`CLAUDE_PACKAGE_README.md`](CLAUDE_PACKAGE_README.md).
 - **Verified Test Execution Summary:** [`results/test_evidence/test_run_summary.txt`](results/test_evidence/test_run_summary.txt).
 - **High-Resolution Figures:**
   - Throughput Comparison: [`results/plots/fig1_throughput_comparison.png`](results/plots/fig1_throughput_comparison.png)

@@ -350,7 +350,7 @@ ParserStatus http_parse_request(const char *raw_data, size_t length,
         /* Specific header semantics */
         if (strcasecmp(hname, "Host") == 0) {
             if (host_found) {
-                /* Multiple Host headers prohibited by RFC 9112 §7.1.2 */
+                /* Multiple Host headers prohibited by RFC 9112 §3.2 */
                 free(hdr_buf);
                 return PARSER_ERR_BAD_REQUEST;
             }

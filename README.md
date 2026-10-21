@@ -68,8 +68,7 @@ This project demystifies transport and application layer interaction by engineer
 - **Canonical Filesystem Sandboxing:** Resolves all URI paths using `realpath(3)` to strictly prevent parent-directory traversal (`../`, `%2e%2e`).
 - **Real-Time Observability Engine:** In-memory lock-free reservoir sampling computing sliding-window RPS and rolling latency percentiles ($p50, p95, p99$).
 - **Live HTML5 Telemetry Dashboard:** Integrated single-page web dashboard displaying live cards, Canvas throughput/latency histories, and an interactive diagnostic console.
-- **Queue-and-Latency-Aware Admission Control (QLAAC):** 3-state adaptive controller (`NORMAL`, `CAUTION`, `OVERLOAD`) with hysteresis dampening.
-- **Complete Test Harness:** 72 passing test cases (37 C17 unit tests across 5 executables, and 35 Python RFC, security, and accounting tests; 100% passing against a running server).
+- **Complete Test Harness:** 92 automated tests across dual C and Python test suites (44 C17 unit tests across 5 executables, and 48 Python protocol, security, accounting, and readiness probe tests; 100% passing against a running server). Historical release baseline (72 tests: 37 C / 35 Python) and initial milestone (26 C / 23 Python) preserved in audit records.
 
 ---
 
@@ -393,32 +392,36 @@ make test
 python3 -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-### Verified Test Results (72 / 72 Passing — 100% Pass Rate with Running Server)
+### Verified Test Results (92 / 92 Passing — 100% Pass Rate with Running Server)
 
 ```text
 ================================================================================
-HTTP/1.1 Web Server - Verification Summary
+HTTP/1.1 Web Server - Verification Summary (Current Suite: 92 Tests)
 ================================================================================
 1. C17 Unit Tests (make test):
-   - bin/test_controller        : [PASS] 9/9   (State transitions, hysteresis reset, sustained pressure, side-effect-free state query)
+   - bin/test_controller        : [PASS] 13/13 (State transitions, hysteresis reset, sustained pressure, queue-wait triggers, side-effect-free query, thread safety)
    - bin/test_parser            : [PASS] 14/14 (RFC 9112 tokens, case-insensitivity, framing, Host, query parsing, bare LF, signed length)
-   - bin/test_queue             : [PASS] 3/3   (FIFO push/pop, 64-capacity boundary, thread-pool shutdown)
-   - bin/test_responses         : [PASS] 4/4   (RFC status phrases, date/server headers, error cleanup, sendfile fallback offset integrity)
-   - bin/test_server_metrics    : [PASS] 7/7   (Lifetime counters, 503 isolation, failed overload write exclusion, bounded latency window)
-   Subtotal: 37 passed, 0 failed
+   - bin/test_queue             : [PASS] 4/4   (FIFO push/pop, 64-capacity boundary, thread-pool shutdown, queue-wait timing)
+   - bin/test_responses         : [PASS] 5/5   (RFC status phrases, date/server headers, error cleanup, sendfile fallback offset integrity, 503 Retry-After)
+   - bin/test_server_metrics    : [PASS] 8/8   (Lifetime counters, 503 isolation, failed overload write exclusion, bounded latency window, negative latency filter, queue-wait accounting, JSON format)
+   Subtotal: 44 passed, 0 failed
 
-2. Python Protocol, Accounting & Security Tests (python3 -m unittest):
-   - test_benchmark_accounting  : [PASS] 12/12 (Strict 2xx throughput isolation, 503 classified as 5xx, framing & leftover preservation)
+2. Python Protocol, Accounting, Security & Readiness Tests (python3 -m unittest discover -s tests):
+   - test_benchmark_accounting  : [PASS] 13/13 (Strict 2xx throughput isolation, 503 classified as 5xx, framing & leftover preservation, client-server counter reconciliation)
    - test_keepalive             : [PASS] 6/6   (Persistent connections, Connection: close semantics, query routing, bounded shutdown < 1.5s)
    - test_malformed_requests    : [PASS] 5/5   (RFC 9112 syntax violations, random byte fuzzing, chunked 501, 100-continue 417)
    - test_security              : [PASS] 12/12 (Path traversal prevention, %2e%2e encoding blocks, symlink sandboxing, NUL byte %00)
-   Subtotal: 35 passed, 0 failed (with server running; 14 passed / 21 skipped standalone without server)
+   - test_readiness_check       : [PASS] 12/12 (Server health JSON validation, rejection of non-HTTP/HTML/unrelated listeners, non-200 responses, malformed JSON, missing status, cooperative polling budget)
+   Subtotal: 48 passed, 0 failed (with server running; 26 passed / 22 skipped standalone without server)
 
-Total Test Execution: 72 / 72 Tests Passed (100% Success Rate against active server)
+Total Test Execution: 92 / 92 Tests Passed (100% Success Rate against active server)
 ================================================================================
 ```
 
-*Full Execution Log:* [`results/test_evidence/test_run_summary.txt`](results/test_evidence/test_run_summary.txt)
+> **Historical Test Suite Baselines (Archived Records):**
+> - **Initial Milestone:** 26 C unit tests across 5 executables + 23 Python RFC tests ([`results/test_evidence/test_run_summary.txt`](results/test_evidence/test_run_summary.txt)).
+> - **Intermediate Release Baseline:** 72 tests total (37 C unit tests: Controller 9, Parser 14, Queue 3, Responses 4, Metrics 7; 35 Python tests: Accounting 12, Keep-Alive 6, Malformed 5, Security 12).
+> - **Current Post-Release Baseline:** 92 tests total (44 C unit tests + 48 Python tests) incorporating QLAAC queue-wait controller telemetry tests and end-to-end benchmark readiness health validation.
 
 ---
 

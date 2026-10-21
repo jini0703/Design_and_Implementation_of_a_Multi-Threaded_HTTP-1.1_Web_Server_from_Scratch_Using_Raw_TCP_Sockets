@@ -46,9 +46,18 @@ def wait_for_server(host, port, max_wait_sec=5.0):
       4. The JSON identifies the server as 'HTTP-Server-C17/1.0.0'
          and protocol as 'HTTP/1.1'.
 
-    Retries with monotonic deadline backoff until max_wait_sec has elapsed.
-    Safely handles connection refusal, timeouts, transport errors,
-    HTTP error codes, malformed JSON, and unrelated listeners on the port.
+    Timing & Readiness Timeout Model:
+      - Uses cooperative polling bounded by a monotonic time budget (start + max_wait_sec).
+      - Per-attempt network operations configure a socket timeout bounded by the
+        remaining budget: attempt_timeout = min(remaining, 1.0).
+      - This distinguishes individual per-operation socket timeouts from an end-to-end
+        deadline: blocking socket calls (connect, send, recv) can take up to
+        attempt_timeout to fail or time out, meaning overall elapsed time can
+        slightly overshoot max_wait_sec rather than being preemptively aborted by
+        an asynchronous interrupt.
+      - Retries sleep for up to 50 ms, capped by the remaining budget.
+      - Safely handles connection refusal, timeouts, transport errors,
+        HTTP error codes, malformed JSON, and unrelated listeners on the port.
     """
     start = time.monotonic()
     deadline = start + max_wait_sec
@@ -61,7 +70,7 @@ def wait_for_server(host, port, max_wait_sec=5.0):
         if remaining <= 0:
             break
 
-        # Bound per-attempt network timeout so it never exceeds the remaining deadline
+        # Bound per-attempt socket timeout so it never exceeds remaining budget or 1.0s
         attempt_timeout = min(remaining, 1.0)
         conn = None
         try:

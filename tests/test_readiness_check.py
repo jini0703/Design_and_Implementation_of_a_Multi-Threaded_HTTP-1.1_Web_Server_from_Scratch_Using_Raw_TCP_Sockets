@@ -8,7 +8,7 @@ Verifies:
   2. A port is open, but the response comes from an unrelated HTTP service or non-HTTP listener.
   3. The health endpoint returns a non-200 status (e.g. 503, 500, 404).
   4. The health endpoint returns malformed or unexpected JSON (invalid syntax, arrays, missing fields).
-  5. The expected server is not running and the readiness deadline expires.
+  5. The expected server is not running and the polling budget expires (distinguishing per-operation socket timeouts from an end-to-end deadline).
   6. Transient retry: server transitions from not ready to ready before deadline.
   7. Live server integration: verifies against the real compiled C server binary if present.
 
@@ -268,7 +268,7 @@ class TestReadinessCheck(unittest.TestCase):
             server.stop()
 
     def test_case5a_server_unavailable_deadline_respected(self):
-        """Case 5a: The server is unavailable (connection refused) and the deadline is respected."""
+        """Case 5a: The server is unavailable (connection refused); polling loop respects max_wait_sec budget."""
         # Find a confirmed unused ephemeral port by binding and immediately closing
         temp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         temp_sock.bind(("127.0.0.1", 0))
@@ -281,10 +281,10 @@ class TestReadinessCheck(unittest.TestCase):
 
         self.assertFalse(result, "Unreachable port must return False")
         self.assertGreaterEqual(t_elapsed, 0.14, "Must not return before configured wait deadline")
-        self.assertLess(t_elapsed, 0.35, "Must not excessively overshoot configured wait deadline")
+        self.assertLess(t_elapsed, 0.35, "Cooperative polling with per-operation timeout must not excessively overshoot budget")
 
     def test_case5b_slow_server_deadline_respected(self):
-        """Case 5b: The server accepts connection but hangs/responds too slowly, respecting short deadline."""
+        """Case 5b: Server accepts connection but hangs; per-operation socket timeout is bounded by remaining budget."""
         def responder(conn):
             # Read request, but do not send response within the test's deadline
             try:
@@ -300,8 +300,8 @@ class TestReadinessCheck(unittest.TestCase):
             t_elapsed = time.monotonic() - t_start
 
             self.assertFalse(result, "Slow/hanging server must return False after deadline")
-            self.assertGreaterEqual(t_elapsed, 0.14, "Must wait up to deadline")
-            self.assertLess(t_elapsed, 0.35, "Per-attempt timeout must not exceed remaining deadline")
+            self.assertGreaterEqual(t_elapsed, 0.14, "Must wait up to deadline budget")
+            self.assertLess(t_elapsed, 0.35, "Per-operation socket timeout must not exceed remaining budget")
         finally:
             raw_server.stop()
 

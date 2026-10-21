@@ -42,9 +42,9 @@ request-line = method SP request-target SP HTTP-version CRLF
 - **Header Limits**: Maximum 64 headers per request. Cumulative header size must not exceed `max_header_size` (default: 8,192 bytes); individual header names and values are bounded per RFC 9110 §5.4 (Field Limits). Violations trigger `431 Request Header Fields Too Large` (RFC 6585) or `400 Bad Request`.
 
 ### 3.3 Message Body Framing & Bounds
-- **Content-Length**: Must be a valid non-negative integer. If `Content-Length` exceeds `max_body_size`, the server rejects the request with `413 Payload Too Large`.
-- **Framing Ambiguity**: If multiple conflicting `Content-Length` headers are supplied, the request is immediately rejected with `400 Bad Request` (RFC 9112 Section 6.2).
-- **Transfer-Encoding**: Chunked transfer coding is deferred to future extensions. If a client transmits `Transfer-Encoding: chunked`, the initial implementation returns `501 Not Implemented` rather than attempting unsafe framing guesses.
+- **Content-Length**: Must be a valid non-negative integer adhering to `1*DIGIT` syntax (RFC 9112 §6.2 / RFC 9110 §8.6). If `Content-Length` exceeds `max_body_size`, the server rejects the request with `413 Payload Too Large`.
+- **Framing Ambiguity**: If multiple conflicting or repeated `Content-Length` headers are supplied, or if both `Transfer-Encoding` and `Content-Length` are present, the request framing is invalid and immediately rejected with `400 Bad Request` and connection closure (RFC 9112 §6.3 Message Body Length).
+- **Transfer-Encoding**: Chunked transfer coding is deferred to future extensions (RFC 9112 §6.1). If a client transmits `Transfer-Encoding: chunked`, the initial implementation returns `501 Not Implemented` rather than attempting unsafe framing guesses.
 
 ---
 

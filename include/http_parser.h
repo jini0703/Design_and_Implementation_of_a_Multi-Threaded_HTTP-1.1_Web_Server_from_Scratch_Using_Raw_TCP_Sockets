@@ -11,7 +11,7 @@
  * Implements strict RFC 9112 request parsing:
  *  - Request line: Method SP Request-URI SP HTTP-Version CRLF
  *  - Case-insensitive header name matching
- *  - Required HTTP/1.1 Host header validation (RFC 9112 §7.1.2)
+ *  - Required HTTP/1.1 Host header validation (RFC 9112 §3.2)
  *  - Framing: Content-Length validation, integer bounds, duplicate/conflicting header rejection
  *  - Transfer-Encoding detection and deliberate rejection (chunked not implemented -> 501)
  *  - Expect: 100-continue detection (417 Expectation Failed)

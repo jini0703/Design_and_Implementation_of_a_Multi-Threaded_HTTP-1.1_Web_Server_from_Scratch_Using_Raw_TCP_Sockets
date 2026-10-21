@@ -129,7 +129,9 @@ ParserStatus http_parse_request(const char *raw_data, size_t length,
     /* 1. Locate end of headers (\r\n\r\n) */
     const char *hdr_end = find_crlf_crlf(raw_data, length);
     if (!hdr_end) {
-        /* Reject bare LF line feeds (\n\n) per RFC 9112 */
+        /* Reject bare LF line terminators (\n\n) as a defensive implementation choice;
+         * RFC 9112 §2.2 defines CRLF as the standard line terminator and allows recipients
+         * to recognize a single LF, but this server strictly requires CRLF to prevent smuggling. */
         for (size_t i = 0; i + 1 < length; i++) {
             if (raw_data[i] == '\n' && raw_data[i+1] == '\n') {
                 return PARSER_ERR_BAD_REQUEST;
@@ -301,7 +303,9 @@ ParserStatus http_parse_request(const char *raw_data, size_t length,
         char *line = cursor;
         cursor = next_crlf + 2;
 
-        /* Reject bare CR or LF characters within the header line per RFC 9112 §5.2 */
+        /* RFC 9112 §2.2 prohibits bare CR outside message body (must reject with 400);
+         * rejecting bare LF within field lines is this server's defensive implementation choice
+         * to prevent request smuggling (RFC 9112 §5.2 addresses obsolete line folding). */
         if (strpbrk(line, "\r\n") != NULL) {
             free(hdr_buf);
             return PARSER_ERR_BAD_REQUEST;
@@ -332,7 +336,7 @@ ParserStatus http_parse_request(const char *raw_data, size_t length,
             }
         }
 
-        /* Reject individual headers exceeding designated buffer limits per RFC 9112 §5.1 */
+        /* Reject individual headers exceeding designated buffer limits per RFC 9110 §5.4 (Field Limits) */
         if (strlen(hname) >= HTTP_MAX_HEADER_NAME || strlen(hval) >= HTTP_MAX_HEADER_VALUE) {
             free(hdr_buf);
             return PARSER_ERR_HEADERS_TOO_LARGE;
@@ -350,7 +354,7 @@ ParserStatus http_parse_request(const char *raw_data, size_t length,
         /* Specific header semantics */
         if (strcasecmp(hname, "Host") == 0) {
             if (host_found) {
-                /* Multiple Host headers prohibited by RFC 9112 §7.1.2 */
+                /* Multiple Host headers prohibited by RFC 9112 §3.2 */
                 free(hdr_buf);
                 return PARSER_ERR_BAD_REQUEST;
             }

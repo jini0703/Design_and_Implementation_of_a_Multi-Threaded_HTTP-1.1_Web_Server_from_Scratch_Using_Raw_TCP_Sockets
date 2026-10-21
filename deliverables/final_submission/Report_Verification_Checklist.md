@@ -110,7 +110,7 @@
       - URL percent-decoding with strict rejection of malformed escapes, NUL bytes (%00), and backslash paths.
       - Canonical root validation with `realpath()` and symlink protections (`O_NOFOLLOW` / `fstat` device/inode validation).
       - Strict RFC 9110/9112 `1*DIGIT` Content-Length grammar (rejecting negative signs, non-digits, and overflow to 413/400).
-      - Strict header parsing rejecting bare CR/LF; individual names of 128 bytes or more and values of 2,048 bytes or more are rejected with 431. Total header block limit is `max_header_size`: 8,192 bytes when the example config loads, otherwise 16,384 bytes with compiled defaults; more than 64 header fields is also rejected.
+      - Strict header parsing rejecting bare CR (RFC 9112 §2.2) and bare LF (defensive server choice, distinct from RFC 9112 §5.2 obsolete line folding); enforces local implementation limits of 128 bytes for header names, 2,048 bytes for header values (rejected with 431 under RFC 9110 §5.4 Field Limits), and cumulative header block limit of `max_header_size` (8,192 bytes loaded, 16,384 compiled default) or 64 fields.
       - Full response cleanup preventing heap buffer and file descriptor leaks on error paths.
       - Zero-copy `sendfile(2)` fallback loop with dynamic `lseek(SEEK_CUR)` offset tracking.
       - Signal-safe shutdown notification (`volatile sig_atomic_t`) and prompt termination of idle keep-alive workers (`atomic_bool stop_requested` / `worker_idle_timeout_sec`).

@@ -16,6 +16,7 @@ Key Capabilities:
 
 import argparse
 import csv
+import http.client
 import json
 import os
 import signal
@@ -35,15 +36,81 @@ from benchmark.run_experiment import run_python_load_generator, fetch_server_met
 
 
 def wait_for_server(host, port, max_wait_sec=5.0):
-    """Poll until server socket is open and accepting TCP connections."""
-    start = time.time()
-    while time.time() - start < max_wait_sec:
+    """
+    Poll until the expected HTTP server is fully operational and verified.
+
+    Sends an HTTP GET request to /health and verifies:
+      1. HTTP status code is 200 OK.
+      2. The response body is valid JSON.
+      3. The JSON explicitly contains "status": "healthy" (no default allowed).
+      4. The JSON identifies the server as 'HTTP-Server-C17/1.0.0'
+         and protocol as 'HTTP/1.1'.
+
+    Timing & Readiness Timeout Model:
+      - Uses cooperative polling bounded by a monotonic time budget (start + max_wait_sec).
+      - Per-attempt network operations configure a socket timeout bounded by the
+        remaining budget: attempt_timeout = min(remaining, 1.0).
+      - This distinguishes individual per-operation socket timeouts from an end-to-end
+        deadline: blocking socket calls (connect, send, recv) can take up to
+        attempt_timeout to fail or time out, meaning overall elapsed time can
+        slightly overshoot max_wait_sec rather than being preemptively aborted by
+        an asynchronous interrupt.
+      - Retries sleep for up to 50 ms, capped by the remaining budget.
+      - Safely handles connection refusal, timeouts, transport errors,
+        HTTP error codes, malformed JSON, and unrelated listeners on the port.
+    """
+    start = time.monotonic()
+    deadline = start + max_wait_sec
+    port_int = int(port)
+    host_hdr = f"[{host}]:{port_int}" if ":" in host and not host.startswith("[") else f"{host}:{port_int}"
+
+    while True:
+        now = time.monotonic()
+        remaining = deadline - now
+        if remaining <= 0:
+            break
+
+        # Bound per-attempt socket timeout so it never exceeds remaining budget or 1.0s
+        attempt_timeout = min(remaining, 1.0)
+        conn = None
         try:
-            s = socket.create_connection((host, port), timeout=0.5)
-            s.close()
-            return True
-        except (socket.error, ConnectionRefusedError):
-            time.sleep(0.05)
+            conn = http.client.HTTPConnection(host, port_int, timeout=attempt_timeout)
+            conn.request(
+                "GET",
+                "/health",
+                headers={
+                    "Host": host_hdr,
+                    "Connection": "close",
+                    "User-Agent": "ReadinessProbe/1.0",
+                },
+            )
+            resp = conn.getresponse()
+            if resp.status == 200:
+                raw_body = resp.read(65536)
+                data = json.loads(raw_body.decode("utf-8", errors="replace"))
+                if (
+                    isinstance(data, dict)
+                    and data.get("status") == "healthy"
+                    and data.get("server") == "HTTP-Server-C17/1.0.0"
+                    and data.get("protocol") == "HTTP/1.1"
+                ):
+                    return True
+        except (OSError, http.client.HTTPException, json.JSONDecodeError, ValueError):
+            pass
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except OSError:
+                    pass
+
+        # Brief pause before retrying, capped to avoid oversleeping past deadline
+        now_after = time.monotonic()
+        remaining_after = deadline - now_after
+        if remaining_after <= 0:
+            break
+        time.sleep(min(0.05, remaining_after))
+
     return False
 
 

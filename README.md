@@ -3,8 +3,8 @@
 [![Language](https://img.shields.io/badge/Language-C17%20%2F%20ISO%209899%3A2018-00599C?logo=c)](src/)
 [![Platform](https://img.shields.io/badge/Platform-POSIX.1--2008%20%2F%20Linux%20x86__64-FCC624?logo=linux&logoColor=black)](./)
 [![RFC Compliance](https://img.shields.io/badge/RFC-9112%20%7C%209110-blue)](https://www.rfc-editor.org/rfc/rfc9112.html)
-[![Verification](https://img.shields.io/badge/Tests-92%2F92%20Passing%20(100%25)-success)](submission/Report_Verification_Checklist.md)
-[![Course](https://img.shields.io/badge/Course-BCSE308P%20Computer%20Networks-red)](submission/F1+TF1_Team17_Report.pdf)
+[![Verification](https://img.shields.io/badge/Tests-92%2F92%20Passing%20(100%25)-success)](submission_files/Report_Verification_Checklist.md)
+[![Course](https://img.shields.io/badge/Course-BCSE308P%20Computer%20Networks-red)](submission_files/F1+TF1_Team17_Report.pdf)
 
 A high-performance, zero-dependency academic systems implementation of an RFC 9112 / RFC 9110 **HTTP/1.1 Web Server built strictly from scratch** using low-level POSIX TCP Berkeley sockets (`AF_INET`, `SOCK_STREAM`) and POSIX threads (`pthreads`).
 
@@ -15,6 +15,7 @@ Developed for the **BCSE308P Computer Networks Laboratory Course** (Fall Semeste
 ## Table of Contents
 
 - [Project Team](#project-team)
+- [Final Academic Submission (`submission_files/`)](#final-academic-submission-submission_files)
 - [Project Overview & Motivation](#project-overview--motivation)
 - [Key Features](#key-features)
 - [System Architecture & Request Lifecycle](#system-architecture--request-lifecycle)
@@ -25,7 +26,7 @@ Developed for the **BCSE308P Computer Networks Laboratory Course** (Fall Semeste
 - [Testing & Quality Assurance](#testing--quality-assurance)
 - [Empirical Benchmarking & Results](#empirical-benchmarking--results)
 - [Authentic Visual Evidence & Screenshots](#authentic-visual-evidence--screenshots)
-- [Academic Deliverables (`submission/`)](#academic-deliverables--vtop-submission-submission)
+- [Academic Deliverables & VTOP Submission (`submission_files/`)](#academic-deliverables--vtop-submission-submission_files)
 - [Engineering Limitations & Security Considerations](#engineering-limitations--security-considerations)
 - [Repository Structure](#repository-structure)
 - [Academic Context & Attribution](#academic-context--attribution)
@@ -43,6 +44,20 @@ Developed for the **BCSE308P Computer Networks Laboratory Course** (Fall Semeste
 - *Course:* **Innovative Evaluation Practices for BCSE308P — Computer Networks Lab**
 - *Academic Term:* **Fall Semester 2026–27**
 - *School / Department:* **School of Computer Science and Engineering, VIT**
+
+---
+
+## Final Academic Submission (`submission_files/`)
+
+All canonical academic deliverables evaluated for the BCSE308P laboratory course are consolidated directly in the [`submission_files/`](submission_files/) folder:
+
+- **Assignment 8 — Project Report (PDF, 54 pages):** [`submission_files/F1+TF1_Team17_Report.pdf`](submission_files/F1+TF1_Team17_Report.pdf)
+- **Assignment 9 — Presentation Deck (PPTX, 29 slides):** [`submission_files/F1+TF1_Team17_PPT.pptx`](submission_files/F1+TF1_Team17_PPT.pptx)
+  *(Matching 1-to-1 PDF preview: [`submission_files/F1+TF1_Team17_PPT.pdf`](submission_files/F1+TF1_Team17_PPT.pdf))*
+- **Assignment 10 — GitHub Repository URL:** [https://github.com/jini0703/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets](https://github.com/jini0703/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets)
+- **Supporting Editable Report Source (DOCX):** [`submission_files/F1+TF1_Team17_Report.docx`](submission_files/F1+TF1_Team17_Report.docx)
+- **Evaluation Verification Checklist:** [`submission_files/Report_Verification_Checklist.md`](submission_files/Report_Verification_Checklist.md)
+- **Detailed Topic Breakdown & Submission Guide:** [`submission_files/README.md`](submission_files/README.md)
 
 ---
 
@@ -328,20 +343,20 @@ Authentic screenshots captured directly from the running C17 server instance at 
 
 ---
 
-## Academic Deliverables & VTOP Submission (`submission/`)
+## Academic Deliverables & VTOP Submission (`submission_files/`)
 
-Per the course evaluation guidelines, official deliverables follow the confirmed Slot (`F1+TF1`) and Team (`Team 17`) specification. All canonical deliverables are consolidated directly under the top-level [`submission/`](submission/) folder for streamlined faculty evaluation:
+Per the course evaluation guidelines, official deliverables follow the confirmed Slot (`F1+TF1`) and Team (`Team 17`) specification. All canonical deliverables are consolidated directly under the top-level [`submission_files/`](submission_files/) folder for streamlined faculty evaluation:
 
 ### VTOP Assignment Mapping & Canonical Files
 
 | VTOP Component | Prescribed Filename & Repository Path | Format / Size | Status & Description |
 | :--- | :--- | :---: | :--- |
-| **Assignment 8: Project Report** | [`submission/F1+TF1_Team17_Report.pdf`](submission/F1+TF1_Team17_Report.pdf) | PDF (54 pages)<br>2,632,172 B | **Definitive Final Report**: Complete 54-page project report formatted to official VIT template, with full empirical data, 11 IEEE references, and verification appendices. |
-| **Assignment 9: Presentation** | [`submission/F1+TF1_Team17_PPT.pptx`](submission/F1+TF1_Team17_PPT.pptx) | PPTX (29 slides)<br>2,171,208 B | **Definitive Oral Defense Deck**: 29 widescreen slides structured across the teacher's ten mandatory evaluation topics. |
-| **Assignment 9 Supporting Preview** | [`submission/F1+TF1_Team17_PPT.pdf`](submission/F1+TF1_Team17_PPT.pdf) | PDF (29 pages)<br>1,087,199 B | **Matching PDF Preview**: Direct 1-to-1 slide-for-slide rendering of the canonical 29-slide PowerPoint deck. |
-| **Supporting Report Source** | [`submission/F1+TF1_Team17_Report.docx`](submission/F1+TF1_Team17_Report.docx) | DOCX (Editable)<br>2,899,989 B | **Formatted Word Source**: Preserves full styling, static table of contents, and all 24 data tables. |
-| **Audit Checklist** | [`submission/Report_Verification_Checklist.md`](submission/Report_Verification_Checklist.md) | Markdown | **Verification Audit**: Section-by-section audit verifying abstract word count ($\le 300$), pagination, 92 test cases, and empirical consistency. |
-| **Submission Directory Guide** | [`submission/README.md`](submission/README.md) | Markdown | **Deliverables Guide**: Detailed topic breakdown across all 29 slides and evaluation details. |
+| **Assignment 8: Project Report** | [`submission_files/F1+TF1_Team17_Report.pdf`](submission_files/F1+TF1_Team17_Report.pdf) | PDF (54 pages)<br>2,632,172 B | **Definitive Final Report**: Complete 54-page project report formatted to official VIT template, with full empirical data, 11 IEEE references, and verification appendices. |
+| **Assignment 9: Presentation** | [`submission_files/F1+TF1_Team17_PPT.pptx`](submission_files/F1+TF1_Team17_PPT.pptx) | PPTX (29 slides)<br>2,171,208 B | **Definitive Oral Defense Deck**: 29 widescreen slides structured across the teacher's ten mandatory evaluation topics. |
+| **Assignment 9 Supporting Preview** | [`submission_files/F1+TF1_Team17_PPT.pdf`](submission_files/F1+TF1_Team17_PPT.pdf) | PDF (29 pages)<br>1,087,199 B | **Matching PDF Preview**: Direct 1-to-1 slide-for-slide rendering of the canonical 29-slide PowerPoint deck. |
+| **Supporting Report Source** | [`submission_files/F1+TF1_Team17_Report.docx`](submission_files/F1+TF1_Team17_Report.docx) | DOCX (Editable)<br>2,899,989 B | **Formatted Word Source**: Preserves full styling, static table of contents, and all 24 data tables. |
+| **Audit Checklist** | [`submission_files/Report_Verification_Checklist.md`](submission_files/Report_Verification_Checklist.md) | Markdown | **Verification Audit**: Section-by-section audit verifying abstract word count ($\le 300$), pagination, 92 test cases, and empirical consistency. |
+| **Submission Directory Guide** | [`submission_files/README.md`](submission_files/README.md) | Markdown | **Deliverables Guide**: Detailed topic breakdown across all 29 slides and evaluation details. |
 | **Assignment 10: GitHub Repository** | `https://github.com/jini0703/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets` | Git Repository | **Authoritative Project Tree**: Full C17 source code, headers, Makefile, tests, benchmark harness, and documentation on branch `main`. |
 
 ### Optional Supporting Archives (Prepared for VTOP Upload)
@@ -386,7 +401,7 @@ If standalone archives are requested by VTOP upload fields, the following matchi
 ├── Makefile                       # C17 compilation rules, compiler flags, and test runners
 ├── LICENSE                        # Project MIT License (Yash Pradhan & Anjini Pandey)
 │
-├── submission/                    # Canonical final academic deliverables (Slot: F1+TF1, Team 17)
+├── submission_files/              # Canonical final academic deliverables (Slot: F1+TF1, Team 17)
 │   ├── F1+TF1_Team17_Report.pdf   # VTOP Assignment 8: Definitive 54-page project report (PDF)
 │   ├── F1+TF1_Team17_PPT.pptx     # VTOP Assignment 9: Definitive 29-slide presentation deck (PPTX)
 │   ├── F1+TF1_Team17_PPT.pdf      # VTOP Assignment 9: Matching 29-page presentation preview (PDF)

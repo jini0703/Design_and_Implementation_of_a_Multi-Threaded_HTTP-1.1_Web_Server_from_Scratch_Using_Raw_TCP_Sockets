@@ -3,9 +3,9 @@
 > [!IMPORTANT]
 > **NOT FOR FINAL EVALUATION / SUBMISSION**
 > The files in this directory represent early preliminary working drafts retained solely for project provenance and historical milestones.
-> **The authoritative final evaluated submission deliverables are located in [`/submission/`](../../submission/):**
-> - **Canonical Final Report (54 pages):** [`/submission/F1+TF1_Team17_Report.pdf`](../../submission/F1+TF1_Team17_Report.pdf)
-> - **Canonical Final Presentation (29 slides):** [`/submission/F1+TF1_Team17_PPT.pptx`](../../submission/F1+TF1_Team17_PPT.pptx)
+> **The authoritative final evaluated submission deliverables are located in [`submission_files/`](../../submission_files/):**
+> - **Canonical Final Report (54 pages):** [`submission_files/F1+TF1_Team17_Report.pdf`](../../submission_files/F1+TF1_Team17_Report.pdf)
+> - **Canonical Final Presentation (29 slides):** [`submission_files/F1+TF1_Team17_PPT.pptx`](../../submission_files/F1+TF1_Team17_PPT.pptx)
 
 ---
 

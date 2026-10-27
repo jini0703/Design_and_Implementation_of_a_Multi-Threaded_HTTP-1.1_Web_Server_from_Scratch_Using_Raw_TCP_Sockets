@@ -73,8 +73,8 @@
    - Enriched all 11 IEEE citations with complete bibliographic records (SOSP 2001, USITS 2003, ACM TOIT 2006, EuroSys 2007, ACM Queue 2011/2012, CACM 2013, Operations Research 1961).
 
 8. **Test Evidence & Visual Integrity:**
-   - Acknowledged that `results/screenshots/06_test_results.png` was synthetically generated. Confirmed it is excluded as proof of test execution.
-   - Verified actual textual execution logs citing authentic test suites.
+   - Formally removed synthetic capture `results/screenshots/06_test_results.png` from the screenshot gallery; the directory strictly contains the five genuine runtime captures (`01_dashboard_overview.png` through `05_qlaac_load_test.png`).
+   - Verified actual textual execution logs citing authentic test suites in `results/test_evidence/test_run_summary.txt`.
 
 9. **Table of Contents & Pagination:**
    - Updated the static TOC page numbers in the DOCX. Verified all principal section starts against the canonical 54-page PDF (`F1+TF1_Team17_Report.pdf`):

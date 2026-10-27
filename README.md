@@ -315,16 +315,16 @@ Authentic screenshots captured directly from the running C17 server instance at 
   <p><em>Figure 1: Systems Monitoring Dashboard overview displaying server online state, QLAAC status, throughput/latency metrics cards, and real-time Canvas charts.</em></p>
 </div>
 
-### Complete Screenshot Gallery
+### Authentic Runtime Screenshots
 
 1. **[`01_dashboard_overview.png`](results/screenshots/01_dashboard_overview.png)**: Full dashboard overview, metrics grid, active thread pool (`1/4 active`), and real-time Canvas latency/RPS charts.
 2. **[`02_health_check.png`](results/screenshots/02_health_check.png)**: Live Interactive API Console execution of `GET /health` showing `HTTP/1.1 200 OK` (4.50 ms latency) and JSON response.
 3. **[`03_post_echo.png`](results/screenshots/03_post_echo.png)**: Live Interactive API Console execution of `POST /api/echo` demonstrating RFC 9112 Content-Length body framing and exact text payload echo.
 4. **[`04_live_metrics.png`](results/screenshots/04_live_metrics.png)**: Live metrics updating dynamically under a 120-request burst, showing real-time RPS spike (~46 RPS) and active latency chart recovery.
 5. **[`05_qlaac_load_test.png`](results/screenshots/05_qlaac_load_test.png)**: QLAAC controller telemetry grid showing active state (`NORMAL`), dynamic threshold signal meters, and transition invariants.
-6. **[`06_test_results.png`](results/screenshots/06_test_results.png)**: Genuine terminal output from baseline test execution showing unit and protocol tests passing (suite expanded to 92 automated tests in current implementation).
 
 *Detailed Capture Documentation:* [`results/screenshots/README.md`](results/screenshots/README.md)
+*Automated Test Verification Summary:* [`results/test_evidence/test_run_summary.txt`](results/test_evidence/test_run_summary.txt)
 
 ---
 
@@ -447,8 +447,7 @@ If standalone archives are requested by VTOP upload fields, the following matchi
 │   │   ├── 02_health_check.png         # GET /health 200 OK & JSON serialization
 │   │   ├── 03_post_echo.png            # POST /api/echo body framing & response
 │   │   ├── 04_live_metrics.png         # Dynamic RPS spike & chart updates under load
-│   │   ├── 05_qlaac_load_test.png      # QLAAC state, dynamic signals & invariants
-│   │   └── 06_test_results.png         # Terminal test output from baseline run (49/49 passed; 92 in current suite)
+│   │   └── 05_qlaac_load_test.png      # QLAAC state, dynamic signals & invariants
 │   └── test_evidence/             # Test execution summaries
 │       └── test_run_summary.txt   # Verified pass/fail execution log of all test suites
 │

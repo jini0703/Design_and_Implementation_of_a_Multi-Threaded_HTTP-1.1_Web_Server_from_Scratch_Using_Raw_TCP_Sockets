@@ -1,8 +1,8 @@
-# Application Verification Screenshots & Test Evidence
+# Application Verification Screenshots & Runtime Visual Evidence
 
 This directory contains authentic visual evidence captured directly from the running C17 Multi-Threaded HTTP/1.1 Web Server and its integrated systems monitoring dashboard.
 
-All screenshots were captured from a live server instance running under POSIX/Linux (WSL2 Debian environment) communicating with the browser frontend via raw TCP sockets at `http://127.0.0.1:8080/`.
+All five screenshots were captured from a live server instance running under POSIX/Linux (WSL2 environment) communicating with the browser frontend via raw TCP sockets at `http://127.0.0.1:8080/`.
 
 ---
 
@@ -13,7 +13,7 @@ All screenshots were captured from a live server instance running under POSIX/Li
 * **Execution & Capture Conditions**: Captured at initial server steady state with `QLAAC: ENABLED` and `Online (HTTP/1.1 Live)`.
 * **Demonstrated Behavior**:
   - **Header & Health Indicators**: Real-time server connectivity status badge, active QLAAC policy indicator (`QLAAC: ENABLED`), and polling timestamp.
-  - **Core Telemetry Grid**: 
+  - **Core Telemetry Grid**:
     - **Throughput (RPS)**: Measured rolling window rate alongside lifetime request totals.
     - **Response Latency**: 2xx percentile metrics (p50, p95, p99, average) displaying the verified "Idle — no recent samples" state with null-break rendering when no recent requests occurred.
     - **Worker Thread Pool**: Pre-allocated POSIX pthread pool utilization (4 worker threads).
@@ -83,19 +83,6 @@ All screenshots were captured from a live server instance running under POSIX/Li
 
 ---
 
-### 6. `06_test_results.png`
-* **Subject**: Automated Build & Unit Test Verification Output
-* **Execution & Capture Conditions**: Genuine terminal output from executing `make test` and `python3 -m unittest discover -s tests -p "test_*.py" -v`.
-* **Demonstrated Behavior**:
-  - **C17 Unit Test Suites (`make test`)**:
-    - `bin/test_controller`: 7/7 passed (worker saturation with empty queue, growing queue, sustained high latency, sustained pressure, recovery, hysteresis reset, disabled policy).
-    - `bin/test_parser`: 9/9 passed (RFC 9112 tokenization, case-insensitive headers, valid GET, missing Host 400 rejection, POST with body, conflicting Content-Length + Transfer-Encoding 400, chunked 501, Expect: 100-continue 417, pipelined buffer preservation).
-    - `bin/test_queue`: 3/3 passed (push/pop, 64-slot capacity limit, thread-pool shutdown).
-    - `bin/test_responses`: 2/2 passed (RFC 9112 status phrases, standard headers).
-    - `bin/test_server_metrics`: 5/5 passed (metrics initialization, normal request accounting, 503 overload response isolation, failed write safety, bounded rolling latency window).
-  - **Python Protocol & Accounting Suites**:
-    - `test_benchmark_accounting.py`: 11/11 passed (strict 2xx success isolation, 503 classified strictly as 5xx, timeout and socket closure handling, N/A latency on zero success).
-    - `test_keepalive.py`: 3/3 passed (persistent connections, Connection: close semantics).
-    - `test_malformed_requests.py`: 5/5 passed (RFC 9112 syntax violations, random byte rejection).
-    - `test_security.py`: 4/4 passed (path traversal prevention, %2e%2e encoding blocks, method restrictions).
-  - **Final Pass Rate**: 49 / 49 tests passing (100% success rate, 0 failures, 0 errors).
+## Test Verification Note
+
+Automated test execution evidence is verified and documented in textual format in [`results/test_evidence/test_run_summary.txt`](../test_evidence/test_run_summary.txt) and verifiable via `make test` (44 C unit tests) and `python3 -m unittest discover -s tests -p "test_*.py"` (48 Python integration tests). All 92 automated tests pass with 100% success against an active server.

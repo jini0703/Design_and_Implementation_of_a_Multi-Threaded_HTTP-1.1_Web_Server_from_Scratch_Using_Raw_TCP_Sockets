@@ -3,8 +3,8 @@
 [![Language](https://img.shields.io/badge/Language-C17%20%2F%20ISO%209899%3A2018-00599C?logo=c)](src/)
 [![Platform](https://img.shields.io/badge/Platform-POSIX.1--2008%20%2F%20Linux%20x86__64-FCC624?logo=linux&logoColor=black)](./)
 [![RFC Compliance](https://img.shields.io/badge/RFC-9112%20%7C%209110-blue)](https://www.rfc-editor.org/rfc/rfc9112.html)
-[![Verification](https://img.shields.io/badge/Tests-92%2F92%20Passing%20(100%25)-success)](deliverables/final_submission/Report_Verification_Checklist.md)
-[![Course](https://img.shields.io/badge/Course-BCSE308P%20Computer%20Networks-red)](deliverables/final_submission/F1+TF1_Team17_Report.pdf)
+[![Verification](https://img.shields.io/badge/Tests-92%2F92%20Passing%20(100%25)-success)](submission/Report_Verification_Checklist.md)
+[![Course](https://img.shields.io/badge/Course-BCSE308P%20Computer%20Networks-red)](submission/F1+TF1_Team17_Report.pdf)
 
 A high-performance, zero-dependency academic systems implementation of an RFC 9112 / RFC 9110 **HTTP/1.1 Web Server built strictly from scratch** using low-level POSIX TCP Berkeley sockets (`AF_INET`, `SOCK_STREAM`) and POSIX threads (`pthreads`).
 
@@ -25,7 +25,7 @@ Developed for the **BCSE308P Computer Networks Laboratory Course** (Fall Semeste
 - [Testing & Quality Assurance](#testing--quality-assurance)
 - [Empirical Benchmarking & Results](#empirical-benchmarking--results)
 - [Authentic Visual Evidence & Screenshots](#authentic-visual-evidence--screenshots)
-- [Academic Deliverables](#academic-deliverables)
+- [Academic Deliverables (`submission/`)](#academic-deliverables--vtop-submission-submission)
 - [Engineering Limitations & Security Considerations](#engineering-limitations--security-considerations)
 - [Repository Structure](#repository-structure)
 - [Academic Context & Attribution](#academic-context--attribution)
@@ -328,30 +328,29 @@ Authentic screenshots captured directly from the running C17 server instance at 
 
 ---
 
-## Academic Deliverables & VTOP Submission
+## Academic Deliverables & VTOP Submission (`submission/`)
 
-Per the course evaluation guidelines, official deliverables follow the confirmed Slot (`F1+TF1`) and Team (`Team 17`) specification. All canonical deliverables are tracked in [`deliverables/final_submission/`](deliverables/final_submission/):
+Per the course evaluation guidelines, official deliverables follow the confirmed Slot (`F1+TF1`) and Team (`Team 17`) specification. All canonical deliverables are consolidated directly under the top-level [`submission/`](submission/) folder for streamlined faculty evaluation:
 
 ### VTOP Assignment Mapping & Canonical Files
 
 | VTOP Component | Prescribed Filename & Repository Path | Format / Size | Status & Description |
 | :--- | :--- | :---: | :--- |
-| **Assignment 8: Project Report** | [`deliverables/final_submission/F1+TF1_Team17_Report.pdf`](deliverables/final_submission/F1+TF1_Team17_Report.pdf) | PDF (54 pages) | **Authoritative Final Report**: Complete 54-page project report formatted to official VIT template, with full empirical data, 11 IEEE references, and verification appendices. |
-| **Assignment 9: Presentation** | [`deliverables/final_submission/F1+TF1_Team17_PPT.pptx`](deliverables/final_submission/F1+TF1_Team17_PPT.pptx) | PPTX (29 slides) | **Authoritative Oral Defense Deck**: 29 widescreen slides structured across the teacher's ten mandatory evaluation topics. |
-| **Assignment 9 Supporting Preview** | [`deliverables/final_submission/F1+TF1_Team17_PPT.pdf`](deliverables/final_submission/F1+TF1_Team17_PPT.pdf) | PDF (29 pages) | **Matching PDF Preview**: Direct 1-to-1 slide-for-slide rendering of the canonical 29-slide PowerPoint deck. |
-| **Supporting Report Source** | [`deliverables/final_submission/F1+TF1_Team17_Report.docx`](deliverables/final_submission/F1+TF1_Team17_Report.docx) | DOCX (Editable) | **Formatted Word Source**: Preserves full styling, static table of contents, and all 24 data tables. |
-| **Audit Checklist** | [`deliverables/final_submission/Report_Verification_Checklist.md`](deliverables/final_submission/Report_Verification_Checklist.md) | Markdown | **Verification Audit**: Section-by-section audit verifying abstract word count ($\le 300$), pagination, 92 test cases, and empirical consistency. |
+| **Assignment 8: Project Report** | [`submission/F1+TF1_Team17_Report.pdf`](submission/F1+TF1_Team17_Report.pdf) | PDF (54 pages)<br>2,632,172 B | **Definitive Final Report**: Complete 54-page project report formatted to official VIT template, with full empirical data, 11 IEEE references, and verification appendices. |
+| **Assignment 9: Presentation** | [`submission/F1+TF1_Team17_PPT.pptx`](submission/F1+TF1_Team17_PPT.pptx) | PPTX (29 slides)<br>2,171,208 B | **Definitive Oral Defense Deck**: 29 widescreen slides structured across the teacher's ten mandatory evaluation topics. |
+| **Assignment 9 Supporting Preview** | [`submission/F1+TF1_Team17_PPT.pdf`](submission/F1+TF1_Team17_PPT.pdf) | PDF (29 pages)<br>1,087,199 B | **Matching PDF Preview**: Direct 1-to-1 slide-for-slide rendering of the canonical 29-slide PowerPoint deck. |
+| **Supporting Report Source** | [`submission/F1+TF1_Team17_Report.docx`](submission/F1+TF1_Team17_Report.docx) | DOCX (Editable)<br>2,899,989 B | **Formatted Word Source**: Preserves full styling, static table of contents, and all 24 data tables. |
+| **Audit Checklist** | [`submission/Report_Verification_Checklist.md`](submission/Report_Verification_Checklist.md) | Markdown | **Verification Audit**: Section-by-section audit verifying abstract word count ($\le 300$), pagination, 92 test cases, and empirical consistency. |
+| **Submission Directory Guide** | [`submission/README.md`](submission/README.md) | Markdown | **Deliverables Guide**: Detailed topic breakdown across all 29 slides and evaluation details. |
 | **Assignment 10: GitHub Repository** | `https://github.com/jini0703/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets` | Git Repository | **Authoritative Project Tree**: Full C17 source code, headers, Makefile, tests, benchmark harness, and documentation on branch `main`. |
 
 ### Optional Supporting Archives (Prepared for VTOP Upload)
 If standalone archives are requested by VTOP upload fields, the following matching archives are prepared outside the Git repository:
 - `F1+TF1_Team17_SourceCode.zip` — Standalone clean archive of source code, configurations, tests, and documentation.
-- `F1+TF1_Team17_Screenshots.zip` — Standalone archive containing all authentic runtime screenshots and high-resolution performance plots.
+- `F1+TF1_Team17_Screenshots.zip` — Standalone archive containing all five authentic runtime screenshots and high-resolution performance plots.
 
-### Historical Preliminary Milestones (Supporting Archive)
-- **Preliminary PDF Report (Historical):** [`deliverables/report/HTTP11_Web_Server_Project_Report.pdf`](deliverables/report/HTTP11_Web_Server_Project_Report.pdf) (13-page preliminary draft retained for project provenance).
-- **Preliminary Markdown Source:** [`deliverables/report/HTTP11_Web_Server_Project_Report.md`](deliverables/report/HTTP11_Web_Server_Project_Report.md).
-- **Presentation Directory Guide:** [`deliverables/presentation/README.md`](deliverables/presentation/README.md) (Slide structure and topic mapping).
+### Historical Preliminary Milestones (Archive)
+- **Historical Preliminary Drafts:** [`docs/archive/`](docs/archive/) (contains early 13-page preliminary draft report, markdown source, and compiler script retained solely for milestone provenance).
 - **Verified Test Execution Summary:** [`results/test_evidence/test_run_summary.txt`](results/test_evidence/test_run_summary.txt).
 - **High-Resolution Figures:**
   - Throughput Comparison: [`results/plots/fig1_throughput_comparison.png`](results/plots/fig1_throughput_comparison.png)
@@ -383,9 +382,17 @@ If standalone archives are requested by VTOP upload fields, the following matchi
 
 ```
 .
-├── README.md                      # [This Document] Primary project landing page & specification
+├── README.md                      # Primary project landing page & specification
 ├── Makefile                       # C17 compilation rules, compiler flags, and test runners
 ├── LICENSE                        # Project MIT License (Yash Pradhan & Anjini Pandey)
+│
+├── submission/                    # Canonical final academic deliverables (Slot: F1+TF1, Team 17)
+│   ├── F1+TF1_Team17_Report.pdf   # VTOP Assignment 8: Definitive 54-page project report (PDF)
+│   ├── F1+TF1_Team17_PPT.pptx     # VTOP Assignment 9: Definitive 29-slide presentation deck (PPTX)
+│   ├── F1+TF1_Team17_PPT.pdf      # VTOP Assignment 9: Matching 29-page presentation preview (PDF)
+│   ├── F1+TF1_Team17_Report.docx  # Supporting editable report source document (DOCX)
+│   ├── Report_Verification_Checklist.md # Comprehensive verification and compliance checklist
+│   └── README.md                  # Detailed submission guide & 10-topic presentation breakdown
 │
 ├── src/                           # Core C17 implementation modules
 │   ├── main.c                     # Server entry point, CLI flags, and signal handler
@@ -415,11 +422,17 @@ If standalone archives are requested by VTOP upload fields, the following matchi
 ├── docs/                          # Comprehensive technical design documentation
 │   ├── architecture.md            # Modular concurrency and data-plane architecture
 │   ├── experiment-methodology.md  # Formal experimental protocol and measurement rules
-│   ├── qlaac-state-machine.md     # Mathematical model, invariants, and hysteresis dampening
-│   ├── rfc-compliance.md          # RFC 9112 / RFC 9110 compliance matrix
-│   └── security-model.md          # Threat model, input validation, directory traversal prevention
+│   ├── protocol-support.md        # RFC 9112 / RFC 9110 HTTP method & feature support
+│   ├── qlaac-controller-revision.md # Closed-loop controller revision history
+│   ├── qlaac-final-diagnostic.md  # Empirical diagnostic log & stability analysis
+│   ├── security-design.md         # Threat model, input validation, directory traversal prevention
+│   └── archive/                   # Historical milestone drafts (retained for provenance)
+│       ├── PRELIMINARY_REPORT_NOT_FOR_SUBMISSION.pdf # 13-page preliminary draft report
+│       ├── preliminary_report_draft.md # Preliminary markdown source
+│       ├── generate_preliminary_report.py # Preliminary report generator script
+│       └── README.md              # Historical archive explanation
 │
-├── tests/                         # Automated verification test suites
+├── tests/                         # Automated verification test suites (92 tests)
 │   ├── test_controller.c          # C unit tests for QLAAC state transitions & hysteresis
 │   ├── test_parser.c              # C unit tests for RFC 9112 compliance & error paths
 │   ├── test_queue.c               # C unit tests for thread-safe circular FIFO bounds
@@ -433,15 +446,8 @@ If standalone archives are requested by VTOP upload fields, the following matchi
 │
 ├── results/
 │   ├── raw/                       # Raw experimental benchmark datasets (CSV format)
-│   │   ├── experiment_baseline_tuned_comparison.csv  # 20 trials: Baseline (no QLAAC)
-│   │   └── experiment_qlaac_tuned_comparison.csv     # 20 trials: QLAAC Active
 │   ├── plots/                     # High-resolution benchmark comparison charts & architecture
-│   │   ├── fig1_throughput_comparison.png     # Successful 2xx RPS comparison
-│   │   ├── fig2_latency_p99_comparison.png      # Tail latency (p99) comparison
-│   │   ├── fig3_qlaac_admission_tradeoff.png    # Admission rate vs. latency trade-off
-│   │   ├── fig4_system_architecture.png         # Modular system architecture diagram
-│   │   └── fig5_qlaac_state_machine.png         # QLAAC state transition diagram
-│   ├── screenshots/               # Real application visual evidence from live server
+│   ├── screenshots/               # Authentic runtime visual evidence from live server
 │   │   ├── README.md              # Detailed explanations of test conditions & captures
 │   │   ├── 01_dashboard_overview.png   # Full web dashboard overview & telemetry
 │   │   ├── 02_health_check.png         # GET /health 200 OK & JSON serialization
@@ -457,20 +463,8 @@ If standalone archives are requested by VTOP upload fields, the following matchi
 │   ├── verify_benchmark_statistics.py # Independent statistical verification script
 │   └── generate_plots.py          # Visualization script producing publication-ready figures
 │
-└── deliverables/                  # Academic course deliverables
-    ├── final_submission/          # Canonical final project submission (Slot: F1+TF1, Team: Team 17)
-    │   ├── F1+TF1_Team17_Report.pdf  # VTOP Assignment 8: Definitive 54-page project report (PDF)
-    │   ├── F1+TF1_Team17_PPT.pptx    # VTOP Assignment 9: Definitive 29-slide presentation deck (PPTX)
-    │   ├── F1+TF1_Team17_PPT.pdf     # VTOP Assignment 9: Matching 29-page presentation preview (PDF)
-    │   ├── F1+TF1_Team17_Report.docx # Supporting editable report source document (DOCX)
-    │   └── Report_Verification_Checklist.md # Comprehensive verification and compliance checklist
-    ├── report/                    # Historical preliminary report & build artifacts
-    │   ├── HTTP11_Web_Server_Project_Report.pdf  # Preliminary 13-page draft report
-    │   ├── HTTP11_Web_Server_Project_Report.md   # Preliminary source Markdown
-    │   ├── generate_report.py                    # Build generator script
-    │   └── README.md                             # Report directory documentation
-    └── presentation/              # Presentation documentation & topic mapping
-        └── README.md                             # 10-topic evaluation mapping and slide guide
+└── scripts/                       # Operational utility scripts
+    └── run_all_tests.sh           # Test suite execution wrapper
 ```
 
 ---

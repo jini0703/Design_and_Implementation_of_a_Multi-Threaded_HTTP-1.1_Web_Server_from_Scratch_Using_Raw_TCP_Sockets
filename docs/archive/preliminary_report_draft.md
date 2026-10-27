@@ -168,7 +168,7 @@ Message Body:   [ Content-Length bytes ]
 
 ## 10. Multithreaded Server Design
 
-![Figure 4: Systems Architecture & Pipeline](results/plots/fig4_system_architecture.png)
+![Figure 4: Systems Architecture & Pipeline](../../results/plots/fig4_system_architecture.png)
 <div class="figure-caption">Figure 4: Detailed Multi-Threaded Systems Architecture, Concurrency Pipeline, and QLAAC Closed-Loop Feedback Flow.</div>
 
 The server architecture isolates socket ingestion from request processing:
@@ -203,7 +203,7 @@ typedef struct {
 
 ## 12. Proposed QLAAC Admission-Control Mechanism
 
-![Figure 5: QLAAC State Machine](results/plots/fig5_qlaac_state_machine.png)
+![Figure 5: QLAAC State Machine](../../results/plots/fig5_qlaac_state_machine.png)
 <div class="figure-caption">Figure 5: Three-Tier QLAAC Finite State Machine with Hysteresis Dampening and Overload Protection.</div>
 
 ### The Bufferbloat & Queue Collapse Problem
@@ -329,13 +329,13 @@ The raw benchmark results from 40 completed trials are synthesized directly from
 ## 18. Analysis and Discussion
 
 ### Throughput Scaling & Concurrency Dynamics
-![Figure 1: Throughput Comparison](results/plots/fig1_throughput_comparison.png)
+![Figure 1: Throughput Comparison](../../results/plots/fig1_throughput_comparison.png)
 <div class="figure-caption">Figure 1: Successful 2xx Requests Per Second Across Concurrency Levels (Baseline vs. QLAAC).</div>
 
 At low concurrency ($C=2$), both Baseline and QLAAC achieve peak line-rate throughput exceeding 13,900–14,600 RPS. Because worker threads ($N=4$) easily handle the two concurrent pipelined client streams, queue wait time is virtually zero ($p50 = 0.12\text{ ms}$).
 
 ### Tail Latency Bound & Anti-Bufferbloat Protection
-![Figure 2: Latency Percentiles](results/plots/fig2_latency_p99_comparison.png)
+![Figure 2: Latency Percentiles](../../results/plots/fig2_latency_p99_comparison.png)
 <div class="figure-caption">Figure 2: 99th Percentile Tail Latency on Logarithmic Scale, Demonstrating QLAAC Tail Latency Suppression.</div>
 
 Under Baseline operation at $C=64$, the 64-slot connection queue is continuously saturated. Inbound requests wait behind dozens of preceding requests in the bounded buffer, causing $p99$ tail latency to skyrocket to **440.33 ms** (while $p50$ and $p95$ remain at $0.52\text{ ms}$ and $1.38\text{ ms}$, illustrating how bufferbloat disproportionately penalizes the tail percentiles).
@@ -343,7 +343,7 @@ Under Baseline operation at $C=64$, the 64-slot connection queue is continuously
 Under QLAAC, the controller senses the elevated queue occupancy and $p95$ pressure, transitioning into `OVERLOAD`. By defensively shedding 72.14% of incoming requests (mean of $16,475.40$ 5xx responses per 10-second trial) with immediate 503 responses, the queue drains rapidly. Consequently, admitted 2xx requests complete with a $p99$ latency of **161.18 ms**—a **2.73x improvement in tail latency**.
 
 ### Tradeoff: Rejection Rate vs. Service Stability
-![Figure 3: Admission Tradeoff](results/plots/fig3_qlaac_admission_tradeoff.png)
+![Figure 3: Admission Tradeoff](../../results/plots/fig3_qlaac_admission_tradeoff.png)
 <div class="figure-caption">Figure 3: Composition of Admitted 2xx vs. Shed 503 Requests Under Extreme Load (C=64).</div>
 
 The trade-off between throughput and latency is fundamental to distributed systems:
@@ -354,7 +354,7 @@ The trade-off between throughput and latency is fundamental to distributed syste
 
 ## 19. Observability & Dynamic Web Dashboard
 
-![Figure 6: Live Web Dashboard Overview](results/plots/dashboard_preview_overview.png)
+![Figure 6: Live Web Dashboard Overview](../../results/plots/dashboard_preview_overview.png)
 <div class="figure-caption">Figure 6: Interactive Systems Telemetry Dashboard Showing Real-Time QLAAC State, Latency History, and Queue Gauge.</div>
 
 The server features a built-in single-page web dashboard (`public/index.html`):

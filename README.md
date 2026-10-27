@@ -4,7 +4,7 @@
 [![Platform](https://img.shields.io/badge/Platform-POSIX.1--2008%20%2F%20Linux%20x86__64-FCC624?logo=linux&logoColor=black)](./)
 [![RFC Compliance](https://img.shields.io/badge/RFC-9112%20%7C%209110-blue)](https://www.rfc-editor.org/rfc/rfc9112.html)
 [![Verification](https://img.shields.io/badge/Tests-92%2F92%20Passing%20(100%25)-success)](deliverables/final_submission/Report_Verification_Checklist.md)
-[![Course](https://img.shields.io/badge/Course-BCSE308P%20Computer%20Networks-red)](deliverables/final_submission/CN_Project_Final_Report_Final_Submission.pdf)
+[![Course](https://img.shields.io/badge/Course-BCSE308P%20Computer%20Networks-red)](deliverables/final_submission/F1+TF1_Team17_Report.pdf)
 
 A high-performance, zero-dependency academic systems implementation of an RFC 9112 / RFC 9110 **HTTP/1.1 Web Server built strictly from scratch** using low-level POSIX TCP Berkeley sockets (`AF_INET`, `SOCK_STREAM`) and POSIX threads (`pthreads`).
 
@@ -39,9 +39,10 @@ Developed for the **BCSE308P Computer Networks Laboratory Course** (Fall Semeste
 | **24BCE0702** | **[Yash Pradhan](https://github.com/yoswinner)** | [yoswinner](https://github.com/yoswinner) |
 | **24BCE0714** | **Anjini Pandey** | [jini0703](https://github.com/jini0703) |
 
-*Course:* **Computer Networks Lab (BCSE308P)**<br>
-*Academic Term:* **Fall Semester 2026–27**<br>
-*School / Department:* **School of Computer Science and Engineering**
+- **Official Course Identifiers:** Slot: `F1+TF1` | Team: `Team 17`
+- *Course:* **Innovative Evaluation Practices for BCSE308P — Computer Networks Lab**
+- *Academic Term:* **Fall Semester 2026–27**
+- *School / Department:* **School of Computer Science and Engineering, VIT**
 
 ---
 
@@ -327,17 +328,30 @@ Authentic screenshots captured directly from the running C17 server instance at 
 
 ---
 
-## Academic Deliverables
+## Academic Deliverables & VTOP Submission
 
-All course deliverables are tracked in [`deliverables/`](deliverables/):
+Per the course evaluation guidelines, official deliverables follow the confirmed Slot (`F1+TF1`) and Team (`Team 17`) specification. All canonical deliverables are tracked in [`deliverables/final_submission/`](deliverables/final_submission/):
 
-- **Canonical Final Technical Report (PDF):** [`deliverables/final_submission/CN_Project_Final_Report_Final_Submission.pdf`](deliverables/final_submission/CN_Project_Final_Report_Final_Submission.pdf) (54-page canonical final project report).
-- **Canonical Final Report Source (DOCX):** [`deliverables/final_submission/CN_Project_Final_Report_Final_Submission.docx`](deliverables/final_submission/CN_Project_Final_Report_Final_Submission.docx).
-- **Report Verification Checklist:** [`deliverables/final_submission/Report_Verification_Checklist.md`](deliverables/final_submission/Report_Verification_Checklist.md).
-- **Revised Presentation (Oral Defense):** [`deliverables/presentation/HTTP11_Web_Server_QLAAC_Presentation_REVISED.pptx`](deliverables/presentation/HTTP11_Web_Server_QLAAC_Presentation_REVISED.pptx) and [`deliverables/presentation/HTTP11_Web_Server_QLAAC_Presentation_REVISED.pdf`](deliverables/presentation/HTTP11_Web_Server_QLAAC_Presentation_REVISED.pdf).
-- **Academic Slide Deck (Primary):** [`deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx`](deliverables/presentation/HTTP11_Web_Server_Project_Presentation.pptx) (18 slides, 16:9 widescreen, custom dark palette, embedded benchmark plots, and speaker notes).
-- **Preliminary Technical Report (Historical):** [`deliverables/report/HTTP11_Web_Server_Project_Report.pdf`](deliverables/report/HTTP11_Web_Server_Project_Report.pdf) (13 pages, early submission draft retained for historical project provenance).
-- **Preliminary Source Markdown Report:** [`deliverables/report/HTTP11_Web_Server_Project_Report.md`](deliverables/report/HTTP11_Web_Server_Project_Report.md).
+### VTOP Assignment Mapping & Canonical Files
+
+| VTOP Component | Prescribed Filename & Repository Path | Format / Size | Status & Description |
+| :--- | :--- | :---: | :--- |
+| **Assignment 8: Project Report** | [`deliverables/final_submission/F1+TF1_Team17_Report.pdf`](deliverables/final_submission/F1+TF1_Team17_Report.pdf) | PDF (54 pages) | **Authoritative Final Report**: Complete 54-page project report formatted to official VIT template, with full empirical data, 11 IEEE references, and verification appendices. |
+| **Assignment 9: Presentation** | [`deliverables/final_submission/F1+TF1_Team17_PPT.pptx`](deliverables/final_submission/F1+TF1_Team17_PPT.pptx) | PPTX (29 slides) | **Authoritative Oral Defense Deck**: 29 widescreen slides structured across the teacher's ten mandatory evaluation topics. |
+| **Assignment 9 Supporting Preview** | [`deliverables/final_submission/F1+TF1_Team17_PPT.pdf`](deliverables/final_submission/F1+TF1_Team17_PPT.pdf) | PDF (29 pages) | **Matching PDF Preview**: Direct 1-to-1 slide-for-slide rendering of the canonical 29-slide PowerPoint deck. |
+| **Supporting Report Source** | [`deliverables/final_submission/F1+TF1_Team17_Report.docx`](deliverables/final_submission/F1+TF1_Team17_Report.docx) | DOCX (Editable) | **Formatted Word Source**: Preserves full styling, static table of contents, and all 24 data tables. |
+| **Audit Checklist** | [`deliverables/final_submission/Report_Verification_Checklist.md`](deliverables/final_submission/Report_Verification_Checklist.md) | Markdown | **Verification Audit**: Section-by-section audit verifying abstract word count ($\le 300$), pagination, 92 test cases, and empirical consistency. |
+| **Assignment 10: GitHub Repository** | `https://github.com/jini0703/Design_and_Implementation_of_a_Multi-Threaded_HTTP-1.1_Web_Server_from_Scratch_Using_Raw_TCP_Sockets` | Git Repository | **Authoritative Project Tree**: Full C17 source code, headers, Makefile, tests, benchmark harness, and documentation on branch `main`. |
+
+### Optional Supporting Archives (Prepared for VTOP Upload)
+If standalone archives are requested by VTOP upload fields, the following matching archives are prepared outside the Git repository:
+- `F1+TF1_Team17_SourceCode.zip` — Standalone clean archive of source code, configurations, tests, and documentation.
+- `F1+TF1_Team17_Screenshots.zip` — Standalone archive containing all authentic runtime screenshots and high-resolution performance plots.
+
+### Historical Preliminary Milestones (Supporting Archive)
+- **Preliminary PDF Report (Historical):** [`deliverables/report/HTTP11_Web_Server_Project_Report.pdf`](deliverables/report/HTTP11_Web_Server_Project_Report.pdf) (13-page preliminary draft retained for project provenance).
+- **Preliminary Markdown Source:** [`deliverables/report/HTTP11_Web_Server_Project_Report.md`](deliverables/report/HTTP11_Web_Server_Project_Report.md).
+- **Presentation Directory Guide:** [`deliverables/presentation/README.md`](deliverables/presentation/README.md) (Slide structure and topic mapping).
 - **Verified Test Execution Summary:** [`results/test_evidence/test_run_summary.txt`](results/test_evidence/test_run_summary.txt).
 - **High-Resolution Figures:**
   - Throughput Comparison: [`results/plots/fig1_throughput_comparison.png`](results/plots/fig1_throughput_comparison.png)
@@ -445,21 +459,19 @@ All course deliverables are tracked in [`deliverables/`](deliverables/):
 │   └── generate_plots.py          # Visualization script producing publication-ready figures
 │
 └── deliverables/                  # Academic course deliverables
-    ├── final_submission/          # Canonical final project submission
-    │   ├── CN_Project_Final_Report_Final_Submission.pdf  # Corrected final project report (PDF)
-    │   ├── CN_Project_Final_Report_Final_Submission.docx # Corrected final report source (DOCX)
-    │   └── Report_Verification_Checklist.md # Comprehensive verification checklist
-    ├── report/                    # Preliminary academic technical report
-    │   ├── HTTP11_Web_Server_Project_Report.pdf  # Preliminary 13-page PDF report
-    │   ├── HTTP11_Web_Server_Project_Report.md   # Editable source Markdown
+    ├── final_submission/          # Canonical final project submission (Slot: F1+TF1, Team: Team 17)
+    │   ├── F1+TF1_Team17_Report.pdf  # VTOP Assignment 8: Definitive 54-page project report (PDF)
+    │   ├── F1+TF1_Team17_PPT.pptx    # VTOP Assignment 9: Definitive 29-slide presentation deck (PPTX)
+    │   ├── F1+TF1_Team17_PPT.pdf     # VTOP Assignment 9: Matching 29-page presentation preview (PDF)
+    │   ├── F1+TF1_Team17_Report.docx # Supporting editable report source document (DOCX)
+    │   └── Report_Verification_Checklist.md # Comprehensive verification and compliance checklist
+    ├── report/                    # Historical preliminary report & build artifacts
+    │   ├── HTTP11_Web_Server_Project_Report.pdf  # Preliminary 13-page draft report
+    │   ├── HTTP11_Web_Server_Project_Report.md   # Preliminary source Markdown
     │   ├── generate_report.py                    # Build generator script
-    │   └── README.md                             # Report verification notes
-    └── presentation/              # Final academic slide decks
-        ├── HTTP11_Web_Server_Project_Presentation.pptx # 18-slide widescreen presentation
-        ├── HTTP11_Web_Server_QLAAC_Presentation_REVISED.pptx # Revised presentation
-        ├── HTTP11_Web_Server_QLAAC_Presentation_REVISED.pdf  # Revised presentation (PDF)
-        ├── generate_presentation.py                    # Slide generation script
-        └── README.md                                   # Presentation notes
+    │   └── README.md                             # Report directory documentation
+    └── presentation/              # Presentation documentation & topic mapping
+        └── README.md                             # 10-topic evaluation mapping and slide guide
 ```
 
 ---

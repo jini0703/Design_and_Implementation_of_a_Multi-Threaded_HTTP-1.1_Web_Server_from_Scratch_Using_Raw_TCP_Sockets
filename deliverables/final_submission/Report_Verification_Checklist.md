@@ -1,6 +1,8 @@
 # Report Verification Checklist — BCSE308P CN Lab Project
 
-**Files:** `CN_Project_Final_Report_Final_Submission.docx` (editable), `CN_Project_Final_Report_Final_Submission.pdf` (54-page canonical PDF rendered from the corrected DOCX), this checklist. The current PDF and static table of contents are aligned to this 54-page final submission rendering; pagination should be rechecked if the DOCX is reflowed or exported under an alternate layout engine.
+**Official Course Identifiers:** Slot: `F1+TF1` | Team: `Team 17`
+**Course:** Innovative Evaluation Practices for BCSE308P — Computer Networks Lab (Fall 2026–27)
+**Deliverables:** `F1+TF1_Team17_Report.pdf` (54-page canonical PDF rendered from the corrected DOCX `F1+TF1_Team17_Report.docx`), `F1+TF1_Team17_PPT.pptx` (29-slide canonical presentation deck), `F1+TF1_Team17_PPT.pdf` (29-page matching preview PDF), this checklist. The current PDF and static table of contents are aligned to this 54-page final submission rendering; pagination should be rechecked if the DOCX is reflowed or exported under an alternate layout engine.
 
 ---
 
@@ -75,7 +77,7 @@
    - Verified actual textual execution logs citing authentic test suites.
 
 9. **Table of Contents & Pagination:**
-   - Updated the static TOC page numbers in the DOCX. Verified all principal section starts against the canonical 54-page PDF (`CN_Project_Final_Report_Final_Submission.pdf`):
+   - Updated the static TOC page numbers in the DOCX. Verified all principal section starts against the canonical 54-page PDF (`F1+TF1_Team17_Report.pdf`):
      - Section 1 (Introduction): Page 6
      - Section 2 (Literature Survey): Page 10
      - Section 3 (Proposed System): Page 12
@@ -97,7 +99,7 @@
     - Preserved Table B.4 as a historical discrepancy record documenting what was previously stated in preliminary notes versus the verified raw CSV data, rather than presenting it as a current error.
 
 12. **Abstract Word Count:**
-    - Verified against `CN_Project_Final_Report_Final_Submission.docx` and `.pdf`:
+    - Verified against `F1+TF1_Team17_Report.docx` and `F1+TF1_Team17_Report.pdf`:
       - Abstract body paragraph contains 275 whitespace-separated words.
       - Microsoft Word native word count (`wdStatisticWords` via Word COM automation) computes exactly 277 words (278 words including the section title "ABSTRACT").
       - Text extracted from PDF Page 2 yields 279 words including page number and header.
@@ -148,7 +150,7 @@
       - Confirmed primary empirical CSV datasets in `results/raw/` (`experiment_baseline_tuned_comparison.csv` and `experiment_qlaac_tuned_comparison.csv`) and paired datasets (`experiment_*_v4_paired_20261019.csv`) were preserved intact.
       - Explicitly documented that Chapter 5 results reflect the primary empirical benchmark runs, while subsequent code-audit fixes were verified through targeted functional and regression tests without re-running heavy multi-client load.
     - **Canonical PDF Export & Static TOC Synchronization:**
-      - Canonical report export: `CN_Project_Final_Report_Final_Submission.pdf` (54 pages).
+      - Canonical report export: `F1+TF1_Team17_Report.pdf` (54 pages; rendered from `F1+TF1_Team17_Report.docx`).
       - The static TOC entries align with the canonical 54-page PDF for all principal chapter and appendix starts.
       - The benchmark launch working directory was not recorded, so the effective configured header-block limit at benchmark time (8,192 or 16,384 bytes) remains unverified; requests in the workload were small GET `/health` requests.
 
@@ -203,7 +205,7 @@ All values in Chapter 5 and Appendix B match `benchmark/verify_benchmark_statist
 ## 5. Remaining Finalization Checks
 
 - **Abstract count verified:** Confirmed directly via Python and Microsoft Word COM (`wdStatisticWords`); the abstract contains 275 whitespace-separated words (277 words by Microsoft Word native counter, 279 words in the PDF page 2 text stream), satisfying the $\le 300$-word limit.
-- **PDF pagination verified:** The canonical PDF (`CN_Project_Final_Report_Final_Submission.pdf`) is 54 pages. All static TOC section starts align with the rendered PDF pages.
+- **PDF pagination verified:** The canonical PDF (`F1+TF1_Team17_Report.pdf`) is 54 pages. All static TOC section starts align with the rendered PDF pages.
 - **Repository cleanup footprint:** In cleanup commit `6abfd94`, approximately 17.3 MB of superseded duplicate files and temporary archives were deleted from the branch working tree / snapshot (`main`), reducing clone checkout footprint while preserving repository commit history intact without rewriting history.
 - **Benchmark launch directory:** The working directory during Chapter 5 benchmarks was not recorded; therefore, whether `config/server.conf.example` loaded and set the total header limit to 8,192 bytes, rather than the 16,384-byte compiled default, is **UNVERIFIED**. No benchmark results were changed.
 - **URI limit:** Source inspection confirms that URI lengths of 2,048 bytes or more are rejected with 414, so the maximum accepted URI length is 2,047 bytes. Table 4.3 states `URI ≤ 2,047 B`.

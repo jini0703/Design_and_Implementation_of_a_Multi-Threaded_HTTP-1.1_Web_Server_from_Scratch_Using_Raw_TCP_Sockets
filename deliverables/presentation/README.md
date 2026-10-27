@@ -1,16 +1,17 @@
-# Project Presentation Deliverable
+# Project Presentation Deliverable — BCSE308P
 
 ## Overview
 
-This directory is the dedicated location for the academic slide deck for the final presentation of the Computer Networks project:
+This directory documents the academic slide deck for the final oral defense and project presentation of the Computer Networks laboratory project:
 
-**Project Title**: *Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server from Scratch Using Raw TCP Sockets*
+**Project Title:** *Design and Implementation of a Multi-Threaded HTTP/1.1 Web Server from Scratch Using Raw TCP Sockets*
+**Course:** Innovative Evaluation Practices for BCSE308P — Computer Networks Lab
+**Academic Term:** Fall Semester 2026–27
+**School:** School of Computer Science and Engineering, Vellore Institute of Technology
 
-### Expected Deliverable Filename
-
-```text
-HTTP11_Web_Server_Project_Presentation.pptx
-```
+### Official Course Identifiers
+- **Slot:** `F1+TF1`
+- **Team:** `Team 17`
 
 ### Project Team
 - **24BCE0702 — Yash Pradhan**
@@ -18,37 +19,41 @@ HTTP11_Web_Server_Project_Presentation.pptx
 
 ---
 
-## Status & Deliverable Verification
+## Canonical Submission Artifacts
 
-> **Verification Status: COMPLETED & VERIFIED**
-> The comprehensive 18-slide academic PowerPoint slide deck has been authored and verified in this directory:
-> - **Final Presentation**: [`HTTP11_Web_Server_Project_Presentation.pptx`](HTTP11_Web_Server_Project_Presentation.pptx) (18 slides, 16:9 widescreen, custom dark systems-engineering palette)
-> - **Revised Presentation (Oral Defense)**: [`HTTP11_Web_Server_QLAAC_Presentation_REVISED.pptx`](HTTP11_Web_Server_QLAAC_Presentation_REVISED.pptx) and [`HTTP11_Web_Server_QLAAC_Presentation_REVISED.pdf`](HTTP11_Web_Server_QLAAC_Presentation_REVISED.pdf)
-> - **Build Generator**: [`generate_presentation.py`](generate_presentation.py)
->
-> All 18 slides include structured layout cards, technical bullet points, empirical benchmark comparison charts, live dashboard screenshots, complete team attribution, and full oral defense speaker notes. No placeholder slides.
+Per teacher requirements for **VTOP Assignment 9**, the presentation must be submitted in PPT/PPTX format. The canonical files are located under [`deliverables/final_submission/`](../final_submission/):
+
+1. **Primary Submission Deck (PPTX — 29 Slides):**
+   [`deliverables/final_submission/F1+TF1_Team17_PPT.pptx`](../final_submission/F1+TF1_Team17_PPT.pptx)
+   *Verified 29-slide widescreen deck following the teacher's ten mandatory evaluation sections.*
+2. **Matching Presentation Preview (PDF — 29 Pages):**
+   [`deliverables/final_submission/F1+TF1_Team17_PPT.pdf`](../final_submission/F1+TF1_Team17_PPT.pdf)
+   *Exact 1-to-1 page export rendered from the canonical 29-slide PowerPoint deck.*
 
 ---
 
-## Proposed Presentation Structure
+## Structure: 10 Evaluated Topics Across 29 Slides
 
-The slide deck is structured into 18 technical slides designed for oral defense before academic faculty and systems-engineering peers:
+The presentation strictly adheres to the ten required topics established by course faculty for project evaluation:
 
-1. **Title Slide**: Project Title, Course Name, Author Name, Affiliation, and Date.
-2. **Motivation & Problem Statement**: The engineering challenge of implementing HTTP/1.1 on raw byte streams without third-party frameworks.
-3. **Objectives & Scope**: Core requirements (C17, POSIX sockets, pthreads, RFC 9112) vs. deliberate out-of-scope boundaries.
-4. **Computer Networks Fundamentals**: TCP three-way handshake, stream-oriented I/O challenges, and HTTP message boundaries.
-5. **TCP Socket Lifecycle**: Socket initialization, `SO_REUSEADDR`, `SO_RCVTIMEO`, `bind`, `listen`, and partial read/write loops.
-6. **HTTP/1.1 Request Lifecycle**: Step-by-step tracing from initial TCP accept to worker dispatch, response assembly, and socket reuse/close.
-7. **System Architecture**: High-level block diagram showing Listener, Bounded Queue, Worker Pool, Parser, Router, and Metrics engine.
-8. **Multithreaded Worker Pool**: Thread lifecycle, eliminating per-request fork cost, and avoiding thread exhaustion.
-9. **Bounded Connection Queue**: Circular buffer design, mutex locking, condition variable flow control, and memory bounding.
-10. **HTTP Parsing & Framing**: Custom zero-dependency RFC 9112 state machine, header tokenization, and `Content-Length` framing.
-11. **Proposed Adaptive Admission Control (QLAAC)**: Three-tier state machine (NORMAL, CAUTION, OVERLOAD), sampling inputs, and hysteresis.
-12. **Security & Defensive Engineering**: Path traversal mitigation (`realpath`), buffer overflow defense, timeouts, and descriptor ownership.
-13. **Monitoring & Observability**: Real-time `/metrics` telemetry, JSON serialization, and dynamic web dashboard.
-14. **Implementation & Live Demonstration**: Tour of the C17 codebase and functional demonstration of static file and API serving.
-15. **Benchmarking Methodology**: Experimental setup, tooling (`wrk`), independent variables, and statistical trial execution.
-16. **Empirical Results & Analysis**: Presentation of throughput scaling curves, latency CDFs ($p50$, $p95$, $p99$), and QLAAC vs. baseline comparison.
-17. **Limitations & Engineering Lessons**: Thread-pool bottlenecks, blocking I/O limits, and insights into systems-level networking.
-18. **Conclusion & Future Work**: Project summary, key takeaways, and potential future directions (e.g. event-driven reactor, HTTP/2).
+| Section | Topic | Slides | Content & Empirical Scope |
+| :---: | :--- | :---: | :--- |
+| **1** | **Title and Team** | Slide 1 | Course details (BCSE308P, Fall 2026–27), Slot `F1+TF1`, `Team 17`, student names & registration numbers (24BCE0702 Yash Pradhan, 24BCE0714 Anjini Pandey), project title. |
+| **2** | **Problem and Motivation** | Slides 2–4 | Queueing delay dominating tail latency ($L = \lambda W$), bufferbloat under burst concurrency, research questions, networking foundations, and literature context. |
+| **3** | **Existing Approach (Baseline) & Gap** | Slides 5–6 | Fixed pthread worker pool with bounded FIFO queue, queue-wait accumulation, throughput vs. tail-latency divergence at $C = 32$ and $C = 64$. |
+| **4** | **Proposed Novelty** | Slide 7 | Closed-loop Queue-and-Latency-Aware Admission Control (QLAAC) introducing dynamic multi-signal overload detection and early request shedding. |
+| **5** | **Architecture & Algorithm** | Slides 8–10 | End-to-end request-handling and feedback architecture, 3-state controller machine (`NORMAL`, `CAUTION`, `OVERLOAD`), threshold hysteresis, C17 source implementation. |
+| **6** | **Implementation Setup** | Slides 11–18 | Raw POSIX TCP sockets (`AF_INET`, `SOCK_STREAM`), zero-copy `sendfile(2)`, circular queue synchronization, streaming RFC 9112 parser, sandbox security (`realpath`), build setup, challenges solved, genuine live runtime captures (Dashboard, `/health`, `/api/echo`, bursts). |
+| **7** | **Scenarios and Metrics** | Slides 19–20 | Experimental methodology, concurrency tiers ($C = 2, 8, 32, 64$), paired trial protocol, 2xx vs. 5xx status accounting, joint throughput/tail-latency interpretation. |
+| **8** | **Results (Baseline vs Proposed)** | Slides 21–24 | Historical v4 results at low/medium load, $C = 32$ CAUTION trade-offs, $C = 64$ OVERLOAD analysis (72.14% load shed, p99 capped), and separate verification-host rerun results. |
+| **9** | **Analysis & Limitations** | Slides 25–27 | p95 vs. p99 rotation, timeline trajectories, failure containment, protocol & testbed limitations (Slowloris, synchronous worker I/O), verification chronology and test validation (92 automated tests). |
+| **10** | **Conclusion, Future Work & References** | Slides 28–29 | Quantified findings, architectural lessons, future avenues (`io_uring`, HTTP/2), and complete IEEE references [1]–[11]. |
+
+---
+
+## Deliverable Integrity Verification
+
+- **Slide Count:** Exactly 29 slides in `F1+TF1_Team17_PPT.pptx`.
+- **Page Count:** Exactly 29 pages in `F1+TF1_Team17_PPT.pdf`.
+- **Technical Parity:** Empirical metrics, tables, and architectural parameters match the 54-page canonical final report (`F1+TF1_Team17_Report.pdf`) byte-for-byte and claim-for-claim.
+- **No Older Decks:** Historical drafts (e.g. earlier 18-slide or intermediate revision decks) have been superseded by this verified 29-slide canonical submission.
